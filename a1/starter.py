@@ -78,13 +78,19 @@ def gradMSE(W, b, x, y, reg):
     return [f_w, f_b]
 
 def crossEntropyLoss(W, b, x, y, reg):
-    pass
-    # Your implementation here
+    bceloss = -y * np.log(logistic_y_hat(W, x, b)) - (1 - y) * np.log(1 - logistic_y_hat(W, x, b))
+    weightdecay = reg / 2 * np.linalg.norm(W) ^ 2
+    return (bceloss / x.shape[0]).cumsum(axis=0) + weightdecay
 
 def gradCE(W, b, x, y, reg):
-    pass
-    # Your implementation here
+    grad_w = ((-y*x + x*logistic_y_hat(W, x, b))/x.shape[0]).cumsum(axis=0) + reg*W
+    # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
+    # Can also verify using tf.gradients on w
+    grad_b = tf.gradients(crossEntropyLoss(W, b, x, y, reg), b)
+    return [grad_w, grad_b]
 
+def logistic_y_hat (W, x, b):
+    return tf.math.sigmoid(np.transpose(W) * x + b)
 
 def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS):
     '''
