@@ -25,15 +25,15 @@ def loadData():
 trainData, validData, testData, trainTarget, validTarget, testTarget = loadData()
 n_samples = trainData.shape[0]
 
-
+# parameters
 W = np.zeros((28, 28))
-b = np.zeros(trainTarget.shape[0])
+b = 0
 lrs = [0.005, 0.001, 0.0001]
 error_tolerance = 1e-7
 epochs = 5000
 reg = 0
 
-print(b.shape)
+
 
 def MSE(W, b, x, y, reg):
     '''
@@ -46,9 +46,10 @@ def MSE(W, b, x, y, reg):
     :return: total loss
     '''
 
-    N = x.shape[0]
 
-    total_loss = (1/(2*N))*np.sum(np.square(np.tensordot(x,W,axes=([1,2],[0,1])) + b - y)) + 0.5*reg*np.sum(np.square(W))
+    N = y.shape[0]
+
+    total_loss = (1/(2*N))*np.sum(np.square(np.matmul(x, W) + b - y.squeeze())) + 0.5*reg*np.sum(np.square(W))
 
 
 
@@ -65,12 +66,14 @@ def gradMSE(W, b, x, y, reg):
     :param reg:
     :return: gradient wrt W, gradient wrt b
     '''
+    x = np.reshape(x, (x.shape[0], -1))
+    W = np.reshape(W, (W.shape[0] * W.shape[1], -1))
 
-    N = x.shape[0]
+    N = y.shape[0]
 
-    f_w = (1/N)*np.transpose(x)*(np.tensordot(x,W,axes=([1,2],[0,1])) + b - y) + reg*W
+    f_w = (1/N)*np.matmul(np.transpose(x), (np.matmul(x, W) + b - y)) + reg*W
 
-    f_b = (1/N)*(np.matmul(x, W) + b - y)
+    f_b = (1/N)*np.sum((np.matmul(x, W) + b - y))
 
     return [f_w, f_b]
 
@@ -98,6 +101,9 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
     '''
 
     #Initialize weight matrix with random
+    trainingData = np.reshape(trainingData, (trainingData.shape[0], -1))
+    W = np.reshape(W, (W.shape[0] * W.shape[1], -1))
+
 
     for epoch in range(iterations):
         #one pass through entire dataset
