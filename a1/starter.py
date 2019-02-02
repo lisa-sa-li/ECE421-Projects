@@ -22,7 +22,22 @@ def loadData():
     return trainData, validData, testData, trainTarget, validTarget, testTarget
 
 def MSE(W, b, x, y, reg):
-    # Your implementation here
+    '''
+
+    :param W: weight matrix
+    :param b: bias matrix
+    :param x: data matrix   N x (d+1). N data points, each one having dimension d+1
+    :param y: labels (0,1)
+    :param reg: regularization constant
+    :return: total loss
+    '''
+    total_loss = 0
+
+    for n in range(1, x.shape[0]+1):
+        total_loss += (1/(2*x.shape[0]))*np.sum(np.square(np.transpose(W)*x[n] + b - y[n])) + 0.5*reg*np.sum(np.square(W))
+
+    return total_loss
+
 
 def gradMSE(W, b, x, y, reg):
     # Your implementation here
