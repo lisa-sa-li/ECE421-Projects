@@ -49,7 +49,7 @@ def MSE(W, b, x, y, reg):
 
     N = y.shape[0]
 
-    total_loss = (1/(2*N))*np.sum(np.square(np.matmul(x, W) + b - y.squeeze())) + 0.5*reg*np.sum(np.square(W))
+    total_loss = (1/(2*N))*(np.linalg.norm(np.matmul(x, W) + b - y))**2 + 0.5*reg*np.sum(np.square(W))
 
 
 
@@ -113,16 +113,19 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
     for epoch in range(iterations):
         #one pass through entire dataset
+        gradients = gradMSE(W, b, trainingData, trainingLabels, reg)
 
-        grad_weights = gradMSE(W, b, trainingData, trainingLabels, reg)[0]
-        grad_biases = gradMSE(W, b, trainingData, trainingLabels, reg)[1]
+        grad_weights = gradients[0]
+        grad_biases = gradients[1]
 
         W = W - alpha*grad_weights
         b = b - alpha*grad_biases
 
-        loss = gradMSE(W, b, trainingData, trainingLabels, reg)
+        loss = MSE(W, b, trainingData, trainingLabels, reg)
 
-        print("Epoch: {}, loss: {}".format(epoch, loss))
+
+
+        print("Epoch: {}, Average loss: {}".format(epoch, loss))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
             break
