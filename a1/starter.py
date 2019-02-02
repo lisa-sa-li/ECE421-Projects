@@ -73,7 +73,7 @@ def gradMSE(W, b, x, y, reg):
 
     f_w = (1/N)*np.matmul(np.transpose(x), (np.matmul(x, W) + b - y)) + reg*W
 
-    f_b = (1/N)*np.sum((np.matmul(x, W) + 2*(b - y)))
+    f_b = (1/N)*np.sum((np.matmul(x, W) + b - y))
 
     return [f_w, f_b]
 
