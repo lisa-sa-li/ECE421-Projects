@@ -107,9 +107,10 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
     for epoch in range(iterations):
         #one pass through entire dataset
+        gradients = gradMSE(W, b, trainingData, trainingLabels, reg)
 
-        grad_weights = gradMSE(W, b, trainingData, trainingLabels, reg)[0]
-        grad_biases = gradMSE(W, b, trainingData, trainingLabels, reg)[1]
+        grad_weights = gradients[0]
+        grad_biases = gradients[1]
 
         W = W - alpha*grad_weights
         b = b - alpha*grad_biases
