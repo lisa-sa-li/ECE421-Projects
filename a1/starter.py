@@ -21,6 +21,20 @@ def loadData():
         testData, testTarget = Data[3600:], Target[3600:]
     return trainData, validData, testData, trainTarget, validTarget, testTarget
 
+
+trainData, validData, testData, trainTarget, validTarget, testTarget = loadData()
+n_samples = trainData.shape[0]
+
+
+W = np.zeros((28, 28))
+b = np.zeros(trainTarget.shape[0])
+lrs = [0.005, 0.001, 0.0001]
+error_tolerance = 1e-7
+epochs = 5000
+reg = 0
+
+print(b.shape)
+
 def MSE(W, b, x, y, reg):
     '''
 
@@ -31,26 +45,88 @@ def MSE(W, b, x, y, reg):
     :param reg: regularization constant
     :return: total loss
     '''
-    total_loss = 0
 
-    for n in range(1, x.shape[0]+1):
-        total_loss += (1/(2*x.shape[0]))*np.sum(np.square(np.transpose(W)*x[n] + b - y[n])) + 0.5*reg*np.sum(np.square(W))
+    N = x.shape[0]
+
+    total_loss = (1/(2*N))*np.sum(np.square(np.tensordot(x,W,axes=([1,2],[0,1])) + b - y)) + 0.5*reg*np.sum(np.square(W))
+
+
 
     return total_loss
 
 
 def gradMSE(W, b, x, y, reg):
-    # Your implementation here
+    '''
+
+    :param W:
+    :param b:
+    :param x:
+    :param y:
+    :param reg:
+    :return: gradient wrt W, gradient wrt b
+    '''
+
+    N = x.shape[0]
+
+    f_w = (1/N)*np.transpose(x)*(np.tensordot(x,W,axes=([1,2],[0,1])) + b - y) + reg*W
+
+    f_b = (1/N)*(np.matmul(x, W) + b - y)
+
+    return [f_w, f_b]
 
 def crossEntropyLoss(W, b, x, y, reg):
+    pass
     # Your implementation here
 
 def gradCE(W, b, x, y, reg):
+    pass
     # Your implementation here
 
+
 def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS):
-    # Your implementation here
+    '''
+
+    :param W: weight matrix
+    :param b: bias vector
+    :param trainingData: (3500, 28, 28)
+    :param trainingLabels: (3500, 1)
+    :param alpha:
+    :param iterations: num epochs
+    :param reg: regularization constant
+    :param EPS: error tolerance
+    :return: optimized weight and bias vectors
+    '''
+
+    #Initialize weight matrix with random
+
+    for epoch in range(iterations):
+        #one pass through entire dataset
+
+        grad_weights = gradMSE(W, b, trainingData, trainingLabels, reg)[0]
+        grad_biases = gradMSE(W, b, trainingData, trainingLabels, reg)[1]
+
+        W = W - alpha*grad_weights
+        b = b - alpha*grad_biases
+
+        loss = gradMSE(W, b, trainingData, trainingLabels, reg)
+
+        print("Epoch: {}, loss: {}".format(epoch, loss))
+
+        if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
+            break
+
+    return W, b
+
+
+
+
 
 def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=None):
     # Your implementation here
+    pass
 
+
+
+
+
+grad_descent(W, b, trainData, trainTarget, lrs[0], epochs, reg, error_tolerance)
