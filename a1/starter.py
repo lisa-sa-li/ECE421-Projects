@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import time
 from normal_equations import WLS
 from plotting import plot
+sess = tf.Session();
 
 def loadData():
     with np.load('notMNIST.npz') as data :
@@ -103,7 +104,7 @@ def gradCE(W, b, x, y, reg):
     grad_w = (tf.transpose(tf.matmul(tf.transpose(-tf.cast(y, tf.float64)),x)) + tf.matmul(tf.transpose(x), tf.transpose(logistic_y_hat(W, x, b))))/x.shape[0] + reg*W #784x1 + 784x1
     # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
     # Can also verify using tf.gradients on w
-    grad_b = tf.gradients(crossEntropyLoss(W, b, x, y, reg), b)
+    grad_b = tf.reduce_sum(-tf.cast(y, tf.float64) + tf.transpose(logistic_y_hat(W, x, b)), axis=0)/y.shape[0]
     return [grad_w, grad_b]
 
 def logistic_y_hat (W, x, b):
@@ -158,8 +159,8 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         grad_weights = gradients[0]
         grad_biases = gradients[1]
 
-        W = W - alpha*grad_weights #(784x1)
-        b = b - alpha*grad_biases #(784x1)
+        W = (W - alpha*grad_weights).eval(session=sess) #(784x1)
+        b = (b - alpha*grad_biases).eval(session=sess) #(784x1)
 
 
 
