@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 def loadData():
     with np.load('notMNIST.npz') as data :
@@ -25,13 +26,18 @@ def loadData():
 trainData, validData, testData, trainTarget, validTarget, testTarget = loadData()
 n_samples = trainData.shape[0]
 
+validData = np.reshape(validData, (validData.shape[0], -1))
+
+testData = np.reshape(testData, (testData.shape[0], -1))
+
+
 # parameters
 W = np.zeros((28, 28))
 b = 0
 lrs = [0.005, 0.001, 0.0001]
 error_tolerance = 1e-7
 epochs = 5000
-reg = 0
+reg = [0, 0.001, 0.1, 0.5]
 
 
 
@@ -66,8 +72,6 @@ def gradMSE(W, b, x, y, reg):
     :param reg:
     :return: gradient wrt W, gradient wrt b
     '''
-    x = np.reshape(x, (x.shape[0], -1))
-    W = np.reshape(W, (W.shape[0] * W.shape[1], -1))
 
     N = y.shape[0]
 
@@ -106,10 +110,15 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
     :return: optimized weight and bias vectors
     '''
 
+    start_time = time.time()
+
     #Initialize weight matrix with random
     trainingData = np.reshape(trainingData, (trainingData.shape[0], -1))
+
     W = np.reshape(W, (W.shape[0] * W.shape[1], -1))
 
+
+    N = trainingLabels.shape[0]
 
     for epoch in range(iterations):
         #one pass through entire dataset
@@ -121,14 +130,24 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         W = W - alpha*grad_weights
         b = b - alpha*grad_biases
 
-        loss = MSE(W, b, trainingData, trainingLabels, reg)
+        train_loss = MSE(W, b, trainingData, trainingLabels, reg)
+        val_loss = MSE(W, b, validData, validTarget, reg)
 
+        predicted_train = np.sign(np.matmul(trainingData, W) + b)
+        predicted_val = np.sign(np.matmul(validData, W) + b)
 
+        train_acc = np.sum(predicted_train == trainingLabels) / N
+        val_acc = np.sum(predicted_val == validTarget) / N
 
-        print("Epoch: {}, Average loss: {}".format(epoch, loss))
+        print("Epoch: {}, | Training loss: {}  | Validation Loss: {} | Training Accuracy: {}  | Validation Accuracy: {}"
+              .format(epoch, train_loss, val_loss, train_acc, val_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
             break
+
+    elapsed_time = int(time.time() - start_time)
+
+    print("Training Complete, Time taken is: {:02d}:{:02d}:{:02d}".format(elapsed_time // 3600, (elapsed_time % 3600 // 60), elapsed_time % 60))
 
     return W, b
 
@@ -144,4 +163,5 @@ def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rat
 
 
 
-grad_descent(W, b, trainData, trainTarget, lrs[0], epochs, reg, error_tolerance)
+W, b = grad_descent(W, b, trainData, trainTarget, lrs[0], epochs, reg[1], error_tolerance)
+print(b)
