@@ -133,14 +133,21 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         train_loss = MSE(W, b, trainingData, trainingLabels, reg)
         val_loss = MSE(W, b, validData, validTarget, reg)
 
-        predicted_train = np.sign(np.matmul(trainingData, W) + b)
-        predicted_val = np.sign(np.matmul(validData, W) + b)
+        predicted_train = np.matmul(trainingData, W)
+        predicted_val = np.matmul(validData, W)
+
+
+        predicted_train[predicted_train > 0] = 1
+        predicted_train[predicted_train < 0] = 0
+
+        predicted_val[predicted_val > 0] = 1
+        predicted_val[predicted_val < 0] = 0
 
         train_acc = np.sum(predicted_train == trainingLabels) / N
-        val_acc = np.sum(predicted_val == validTarget) / N
+        val_acc = np.sum(predicted_val == validTarget) / validTarget.shape[0]
 
         print("Epoch: {}, | Training loss: {}  | Validation Loss: {} | Training Accuracy: {}  | Validation Accuracy: {}"
-              .format(epoch, train_loss, val_loss, train_acc, val_acc))
+              .format(epoch + 1, train_loss, val_loss, train_acc, val_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
             break
@@ -163,5 +170,5 @@ def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rat
 
 
 
-W, b = grad_descent(W, b, trainData, trainTarget, lrs[0], epochs, reg[1], error_tolerance)
+W, b = grad_descent(W, b, trainData, trainTarget, lrs[1], epochs, reg[0], error_tolerance)
 print(b)
