@@ -133,8 +133,8 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         train_loss = MSE(W, b, trainingData, trainingLabels, reg)
         val_loss = MSE(W, b, validData, validTarget, reg)
 
-        predicted_train = np.matmul(trainingData, W)
-        predicted_val = np.matmul(validData, W)
+        predicted_train = np.matmul(trainingData, W) + b
+        predicted_val = np.matmul(validData, W) + b
 
 
         predicted_train[predicted_train > 0] = 1
@@ -170,5 +170,5 @@ def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rat
 
 
 
-W, b = grad_descent(W, b, trainData, trainTarget, lrs[1], epochs, reg[0], error_tolerance)
-print(b)
+#W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance)
+#print(b)
