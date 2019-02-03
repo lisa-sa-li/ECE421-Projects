@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from normal_equations import WLS
+from plotting import plot
 
 def loadData():
     with np.load('notMNIST.npz') as data :
@@ -29,6 +31,16 @@ n_samples = trainData.shape[0]
 validData = np.reshape(validData, (validData.shape[0], -1))
 
 testData = np.reshape(testData, (testData.shape[0], -1))
+
+#storing losses and accuracies
+
+trainloss_list = []
+valloss_list = []
+testloss_list = []
+
+train_acc_list = []
+val_acc_list = []
+test_acc_list = []
 
 
 # parameters
@@ -96,7 +108,7 @@ def gradCE(W, b, x, y, reg):
 def logistic_y_hat (W, x, b):
     return tf.math.sigmoid(np.transpose(W) * x + b)
 
-def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS):
+def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, lossType = None):
     '''
 
     :param W: weight matrix
@@ -120,9 +132,26 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
     N = trainingLabels.shape[0]
 
+
+
+
     for epoch in range(iterations):
         #one pass through entire dataset
-        gradients = gradMSE(W, b, trainingData, trainingLabels, reg)
+
+        if lossType == "MSE":
+            gradients = gradMSE(W, b, trainingData, trainingLabels, reg)
+
+            train_loss = MSE(W, b, trainingData, trainingLabels, reg)
+            val_loss = MSE(W, b, validData, validTarget, reg)
+            test_loss = MSE(W, b, testData, testTarget, reg)
+
+        else:
+            gradients = gradCE(W, b, trainingData, trainingLabels, reg)
+
+            train_loss = crossEntropyLoss(W, b, trainingData, trainingLabels, reg)
+            val_loss = crossEntropyLoss(W, b, validData, validTarget, reg)
+            test_loss = crossEntropyLoss(W, b, testData, testTarget, reg)
+
 
         grad_weights = gradients[0]
         grad_biases = gradients[1]
@@ -130,12 +159,11 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         W = W - alpha*grad_weights
         b = b - alpha*grad_biases
 
-        train_loss = MSE(W, b, trainingData, trainingLabels, reg)
-        val_loss = MSE(W, b, validData, validTarget, reg)
+
 
         predicted_train = np.matmul(trainingData, W) + b
         predicted_val = np.matmul(validData, W) + b
-
+        predicted_test = np.matmul(testData, W) + b
 
         predicted_train[predicted_train > 0] = 1
         predicted_train[predicted_train < 0] = 0
@@ -143,11 +171,26 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         predicted_val[predicted_val > 0] = 1
         predicted_val[predicted_val < 0] = 0
 
+        predicted_test[predicted_test > 0] = 1
+        predicted_test[predicted_test < 0] = 0
+
         train_acc = np.sum(predicted_train == trainingLabels) / N
         val_acc = np.sum(predicted_val == validTarget) / validTarget.shape[0]
+        test_acc = np.sum(predicted_test == testTarget) / testTarget.shape[0]
 
-        print("Epoch: {}, | Training loss: {}  | Validation Loss: {} | Training Accuracy: {}  | Validation Accuracy: {}"
-              .format(epoch + 1, train_loss, val_loss, train_acc, val_acc))
+        #storing losses and accuracies
+        trainloss_list.append(train_loss)
+        valloss_list.append(val_loss)
+        testloss_list.append(test_loss)
+
+        train_acc_list.append(train_acc)
+        val_acc_list.append(val_acc)
+        test_acc_list.append(test_acc)
+
+
+        print("Epoch: {}, | Training loss: {:.5f}  | Validation Loss: {:.5f} |  Test Loss: {:.5f} | "
+              "Training Accuracy: {:.5f}  | Validation Accuracy: {:.5f} |  Test Accuracy: {:.5f}"
+              .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
             break
@@ -168,7 +211,17 @@ def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rat
 
 
 
+test_normal = False
+test_GD = True
+
+if test_GD:
+    W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, "MSE")
+    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
 
 
-#W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance)
-#print(b)
+
+if test_normal:
+    w_least_squares = WLS(trainData, trainTarget, reg[0])
+    analytical_loss = MSE(w_least_squares, 0, trainData.reshape((trainData.shape[0], -1)), trainTarget, reg[0])
+    print("Final training MSE for normal equation: {:02f} ".format(analytical_loss))
+
