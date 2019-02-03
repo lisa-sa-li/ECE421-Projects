@@ -94,19 +94,21 @@ def gradMSE(W, b, x, y, reg):
     return [f_w, f_b]
 
 def crossEntropyLoss(W, b, x, y, reg):
-    bceloss = -y * np.log(logistic_y_hat(W, x, b)) - (1 - y) * np.log(1 - logistic_y_hat(W, x, b))
-    weightdecay = reg / 2 * np.linalg.norm(W) ^ 2
-    return (bceloss / x.shape[0]).cumsum(axis=0) + weightdecay
+    bceloss = tf.matmul(tf.transpose(-tf.cast(y, tf.float64)),tf.log(tf.transpose(logistic_y_hat(W, x, b)))) - tf.matmul(tf.transpose(-tf.cast(1-y, tf.float64)),tf.log(tf.transpose(1-logistic_y_hat(W, x, b))))
+    weightdecay = reg / 2 * np.linalg.norm(W)**2
+    return bceloss / x.shape[0] + weightdecay
 
 def gradCE(W, b, x, y, reg):
-    grad_w = ((-y*x + x*logistic_y_hat(W, x, b))/x.shape[0]).cumsum(axis=0) + reg*W
+    #grad_w = tf.gradients(crossEntropyLoss(W, b, x, y, reg), W)
+    grad_w = (tf.transpose(tf.matmul(tf.transpose(-tf.cast(y, tf.float64)),x)) + tf.matmul(tf.transpose(x), tf.transpose(logistic_y_hat(W, x, b))))/x.shape[0] + reg*W #784x1 + 784x1
     # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
     # Can also verify using tf.gradients on w
     grad_b = tf.gradients(crossEntropyLoss(W, b, x, y, reg), b)
     return [grad_w, grad_b]
 
 def logistic_y_hat (W, x, b):
-    return tf.math.sigmoid(np.transpose(W) * x + b)
+    return tf.math.sigmoid(tf.matmul(tf.transpose(W), tf.transpose(x)) + b)
+    #(1x3500)
 
 def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, lossType = None):
     '''
@@ -156,8 +158,8 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         grad_weights = gradients[0]
         grad_biases = gradients[1]
 
-        W = W - alpha*grad_weights
-        b = b - alpha*grad_biases
+        W = W - alpha*grad_weights #(784x1)
+        b = b - alpha*grad_biases #(784x1)
 
 
 
@@ -209,16 +211,12 @@ def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rat
     # Your implementation here
     pass
 
-
-
 test_normal = False
 test_GD = True
 
 if test_GD:
-    W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, "MSE")
+    W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, "CE")
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
-
-
 
 if test_normal:
     w_least_squares = WLS(trainData, trainTarget, reg[0])
