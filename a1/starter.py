@@ -208,8 +208,17 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
 
 def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=None):
-    # Your implementation here
-    pass
+
+    # Initialize weight and bias tensors
+    
+
+    tf.set_random_seed(421)
+    if loss == "MSE":
+        pass
+    elif loss == "CE":
+        pass
+
+
 
 test_normal = False
 test_GD = True
