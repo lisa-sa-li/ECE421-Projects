@@ -44,7 +44,7 @@ test_acc_list = []
 
 
 # parameters
-W = np.zeros((28, 28))
+W = np.random.rand(28, 28)
 b = 0
 lrs = [0.005, 0.001, 0.0001]
 error_tolerance = 1e-7
@@ -149,7 +149,7 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
             val_loss = MSE(W, b, validData, validTarget, reg)
             test_loss = MSE(W, b, testData, testTarget, reg)
 
-        else:
+        elif lossType == "CE":
             gradients = gradCE(W, b, trainingData, trainingLabels, reg)
 
             train_loss = crossEntropyLoss(W, b, trainingData, trainingLabels, reg)
@@ -197,7 +197,7 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
               .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
-            break
+           break
 
     elapsed_time = int(time.time() - start_time)
 
@@ -226,7 +226,7 @@ test_normal = False
 test_GD = True
 
 if test_GD:
-    W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, "CE")
+    W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, 'CE')
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
 
 if test_normal:
