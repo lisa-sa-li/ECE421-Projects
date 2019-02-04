@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import time
 from normal_equations import WLS
 from plotting import plot
-sess = tf.Session();
 
 def loadData():
     with np.load('notMNIST.npz') as data :
@@ -95,20 +94,20 @@ def gradMSE(W, b, x, y, reg):
     return [f_w, f_b]
 
 def crossEntropyLoss(W, b, x, y, reg):
-    bceloss = tf.matmul(tf.transpose(-tf.cast(y, tf.float64)),tf.log(tf.transpose(logistic_y_hat(W, x, b)))) - tf.matmul(tf.transpose(-tf.cast(1-y, tf.float64)),tf.log(tf.transpose(1-logistic_y_hat(W, x, b))))
+    bceloss = np.matmul(np.transpose(-y.astype(float)),np.log(np.transpose(logistic_y_hat(W, x, b)))) - np.matmul(np.transpose((1-y).astype(float)),np.log(np.transpose(1-logistic_y_hat(W, x, b))))
     weightdecay = reg / 2 * np.linalg.norm(W)**2
     return bceloss / x.shape[0] + weightdecay
 
 def gradCE(W, b, x, y, reg):
     #grad_w = tf.gradients(crossEntropyLoss(W, b, x, y, reg), W)
-    grad_w = (tf.transpose(tf.matmul(tf.transpose(-tf.cast(y, tf.float64)),x)) + tf.matmul(tf.transpose(x), tf.transpose(logistic_y_hat(W, x, b))))/x.shape[0] + reg*W #784x1 + 784x1
+    grad_w = (np.transpose(np.matmul(np.transpose(-y.astype(float)),x)) + np.matmul(np.transpose(x), np.transpose(logistic_y_hat(W, x, b))))/x.shape[0] + reg*W #784x1 + 784x1
     # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
     # Can also verify using tf.gradients on w
-    grad_b = tf.reduce_sum(-tf.cast(y, tf.float64) + tf.transpose(logistic_y_hat(W, x, b)), axis=0)/y.shape[0]
+    grad_b = np.sum(-y.astype(float) + np.transpose(logistic_y_hat(W, x, b)), axis=0)/y.shape[0]
     return [grad_w, grad_b]
 
 def logistic_y_hat (W, x, b):
-    return tf.math.sigmoid(tf.matmul(tf.transpose(W), tf.transpose(x)) + b)
+    return 1/(1+np.exp(np.matmul(np.transpose(W), np.transpose(x)) + b))
     #(1x3500)
 
 def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, lossType = None):
@@ -159,8 +158,8 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         grad_weights = gradients[0]
         grad_biases = gradients[1]
 
-        W = (W - alpha*grad_weights).eval(session=sess) #(784x1)
-        b = (b - alpha*grad_biases).eval(session=sess) #(784x1)
+        W = (W - alpha*grad_weights) #(784x1)
+        b = (b - alpha*grad_biases) #(784x1)
 
 
 
