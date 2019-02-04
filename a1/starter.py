@@ -108,7 +108,7 @@ def gradCE(W, b, x, y, reg):
 
     N = y.shape[0]
 
-    dw = (1/N) * ((x.T) @ (logistic_y_hat(W, x, b) - y)) + reg*W
+    dw = (1/N) * np.matmul((x.T),(logistic_y_hat(W, x, b) - y)) + reg*W
 
     db = (1/N)*np.sum(logistic_y_hat(W, x, b) - y)
 
@@ -120,7 +120,7 @@ def sigmoid(z):
 
 
 def logistic_y_hat (W, x, b):
-    return sigmoid(x@W + b)
+    return sigmoid(np.matmul(x,W) + b)
 
 
 def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, lossType = None):
@@ -216,7 +216,7 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
               .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
-           break
+           pass
 
     elapsed_time = int(time.time() - start_time)
 
