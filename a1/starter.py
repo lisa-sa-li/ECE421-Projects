@@ -256,8 +256,8 @@ test_normal = False
 test_GD = True
 
 if test_GD:
-    W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, 'CE')
-    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
+    W, b = grad_descent(W, b, trainData, trainTarget, lrs[0], epochs, reg[0], error_tolerance, 'CE')
+    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
 
 if test_normal:
     w_least_squares = WLS(trainData, trainTarget, reg[0])
