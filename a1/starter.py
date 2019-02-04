@@ -101,6 +101,9 @@ def crossEntropyLoss(W, b, x, y, reg):
 
 def gradCE(W, b, x, y, reg):
     #grad_w = tf.gradients(crossEntropyLoss(W, b, x, y, reg), W)
+
+
+    #working version for ryan
     grad_w = (np.transpose(np.matmul(np.transpose(-y.astype(float)),x)) + np.matmul(np.transpose(x), np.transpose(logistic_y_hat(W, x, b))))/x.shape[0] + reg*W #784x1 + 784x1
     # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
     # Can also verify using tf.gradients on w
