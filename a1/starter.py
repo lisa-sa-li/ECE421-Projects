@@ -94,9 +94,10 @@ def gradMSE(W, b, x, y, reg):
     return [f_w, f_b]
 
 def crossEntropyLoss(W, b, x, y, reg):
-    bceloss = np.matmul(np.transpose(-y.astype(float)),np.log(np.transpose(logistic_y_hat(W, x, b)))) - np.matmul(np.transpose((1-y).astype(float)),np.log(np.transpose(1-logistic_y_hat(W, x, b))))
+    bceloss = (1 / x.shape[0])*np.matmul(np.transpose(-y.astype(float)),np.log(np.transpose(logistic_y_hat(W, x, b)))) - np.matmul(np.transpose((1-y).astype(float)),np.log(np.transpose(1-logistic_y_hat(W, x, b))))
+    bceloss = bceloss.item()
     weightdecay = reg / 2 * np.linalg.norm(W)**2
-    return bceloss / x.shape[0] + weightdecay
+    return bceloss + weightdecay
 
 def gradCE(W, b, x, y, reg):
     #grad_w = tf.gradients(crossEntropyLoss(W, b, x, y, reg), W)
@@ -104,6 +105,7 @@ def gradCE(W, b, x, y, reg):
     # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
     # Can also verify using tf.gradients on w
     grad_b = np.sum(-y.astype(float) + np.transpose(logistic_y_hat(W, x, b)), axis=0)/y.shape[0]
+    grad_b = grad_b.item()
     return [grad_w, grad_b]
 
 def logistic_y_hat (W, x, b):
@@ -158,8 +160,8 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         grad_weights = gradients[0]
         grad_biases = gradients[1]
 
-        W = (W - alpha*grad_weights) #(784x1)
-        b = (b - alpha*grad_biases) #(784x1)
+        W = W - alpha*grad_weights #(784x1)
+        b = b - alpha*grad_biases #(784x1)
 
 
 
@@ -225,7 +227,7 @@ test_GD = True
 
 if test_GD:
     W, b = grad_descent(W, b, trainData, trainTarget, lrs[2], epochs, reg[0], error_tolerance, "CE")
-    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
+    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
 
 if test_normal:
     w_least_squares = WLS(trainData, trainTarget, reg[0])
