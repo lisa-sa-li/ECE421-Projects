@@ -228,18 +228,29 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
 
 
-def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=None):
+def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=0.001):
 
     # Initialize weight and bias tensors
-    
+    weights = tf.truncated_normal(W.shape, stddev=0.5)
+    weights = np.reshape(weights, (weights.shape[0] * weights.shape[1], -1))
+    bias = 0
+    data = tf.placeholder(tf.float64, trainData.shape)
+    labels = tf.placeholder(tf.int8, trainTarget.shape)
+    regularization = tf.placeholder(tf.float64, (1,1))
+
 
     tf.set_random_seed(421)
     if loss == "MSE":
-        pass
+        loss_tensor = MSE(W=weights, b=bias, x=data, y=labels, reg=regularization)
+        predicted_labels = tf.matmul(trainingData, weights) + b
     elif loss == "CE":
-        pass
+        loss_tensor = crossEntropyLoss(W=weights, b=bias, x=data, y=labels, reg=regularization)
+        predicted_labels = tf.sigmoid(tf.matmul(trainingData, weights))
 
+    opt = GradientDescentOptimizer(learning_rate=learning_rate)
+    opt_op = opt.minimize(loss_tensor, var_list=[W, b])
 
+    return weights, bias, predicted_labels, labels, loss_tensor, opt_op, regularization
 
 test_normal = False
 test_GD = True
