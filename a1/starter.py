@@ -44,7 +44,7 @@ test_acc_list = []
 
 
 # parameters
-W = np.random.rand(28, 28)
+W = np.zeros((28, 28))
 b = 0
 lrs = [0.005, 0.001, 0.0001]
 error_tolerance = 1e-7
@@ -94,26 +94,34 @@ def gradMSE(W, b, x, y, reg):
     return [f_w, f_b]
 
 def crossEntropyLoss(W, b, x, y, reg):
-    bceloss = (1 / x.shape[0])*np.matmul(np.transpose(-y.astype(float)),np.log(np.transpose(logistic_y_hat(W, x, b)))) - np.matmul(np.transpose((1-y).astype(float)),np.log(np.transpose(1-logistic_y_hat(W, x, b))))
-    bceloss = bceloss.item()
-    weightdecay = reg / 2 * np.linalg.norm(W)**2
-    return bceloss + weightdecay
+
+    N = y.shape[0]
+
+    loss1 = -np.mean(y * np.log(logistic_y_hat(W, x, b)) + (1-y)*np.log(1-logistic_y_hat(W, x, b)))
+    loss2 = 0.5*reg*(np.linalg.norm(W))**2
+
+    total_loss = loss1 + loss2
+
+    return total_loss
 
 def gradCE(W, b, x, y, reg):
-    #grad_w = tf.gradients(crossEntropyLoss(W, b, x, y, reg), W)
+
+    N = y.shape[0]
+
+    dw = (1/N) * ((x.T) @ (logistic_y_hat(W, x, b) - y)) + reg*W
+
+    db = (1/N)*np.sum(logistic_y_hat(W, x, b) - y)
+
+    return [dw, db]
 
 
-    #working version for ryan
-    grad_w = (np.transpose(np.matmul(np.transpose(-y.astype(float)),x)) + np.matmul(np.transpose(x), np.transpose(logistic_y_hat(W, x, b))))/x.shape[0] + reg*W #784x1 + 784x1
-    # see derivation: https://github.com/Exquisition/ECE421-Projects/blob/master/a1/bceloss_gradient_derivation.jpg
-    # Can also verify using tf.gradients on w
-    grad_b = np.sum(-y.astype(float) + np.transpose(logistic_y_hat(W, x, b)), axis=0)/y.shape[0]
-    grad_b = grad_b.item()
-    return [grad_w, grad_b]
+def sigmoid(z):
+    return 1/(1+np.exp(-z))
+
 
 def logistic_y_hat (W, x, b):
-    return 1/(1+np.exp(np.matmul(np.transpose(W), np.transpose(x)) + b))
-    #(1x3500)
+    return sigmoid(x@W + b)
+
 
 def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, lossType = None):
     '''
@@ -167,19 +175,27 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
         b = b - alpha*grad_biases #(784x1)
 
 
+        if lossType == "MSE":
 
-        predicted_train = np.matmul(trainingData, W) + b
-        predicted_val = np.matmul(validData, W) + b
-        predicted_test = np.matmul(testData, W) + b
+            predicted_train = np.matmul(trainingData, W) + b
+            predicted_val = np.matmul(validData, W) + b
+            predicted_test = np.matmul(testData, W) + b
 
-        predicted_train[predicted_train > 0] = 1
-        predicted_train[predicted_train < 0] = 0
+            predicted_train[predicted_train > 0] = 1
+            predicted_train[predicted_train < 0] = 0
 
-        predicted_val[predicted_val > 0] = 1
-        predicted_val[predicted_val < 0] = 0
+            predicted_val[predicted_val > 0] = 1
+            predicted_val[predicted_val < 0] = 0
 
-        predicted_test[predicted_test > 0] = 1
-        predicted_test[predicted_test < 0] = 0
+            predicted_test[predicted_test > 0] = 1
+            predicted_test[predicted_test < 0] = 0
+
+        elif lossType == "CE":
+
+            predicted_train = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in logistic_y_hat(W, trainingData, b)]), axis=1)
+            predicted_val = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in logistic_y_hat(W, validData, b)]), axis=1)
+            predicted_test = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in logistic_y_hat(W, testData, b)]), axis=1)
+
 
         train_acc = np.sum(predicted_train == trainingLabels) / N
         val_acc = np.sum(predicted_val == validTarget) / validTarget.shape[0]
