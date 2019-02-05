@@ -225,31 +225,30 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
 
 
-def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=0.001):
+def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=0.001, minibatch_size=None):
 
     # Initialize weight and bias tensors
-    weights = tf.truncated_normal(W.shape, stddev=0.5)
-    weights = np.reshape(weights, (weights.shape[0] * weights.shape[1], -1))
-    bias = 0
-    data = tf.placeholder(tf.float64, trainData.shape)
-    labels = tf.placeholder(tf.int8, trainTarget.shape)
-    regularization = tf.placeholder(tf.float64, (1,1))
+    weights = tf.reshape(tf.truncated_normal(W.shape, stddev=0.5, dtype=tf.float32), (W.shape[0] * W.shape[1], -1))
+    bias = tf.Variable(tf.ones(1), name="bias")
+    data = tf.placeholder(tf.float32, (None, trainData.shape[1]*trainData.shape[2]))
+    labels = tf.placeholder(tf.int8, (None, trainTarget.shape[1]))
+    regularization = tf.Variable(tf.ones(1), name="reg")
 
 
     tf.set_random_seed(421)
     if lossType == "MSE":
-        loss_tensor = MSE(W=weights, b=bias, x=data, y=labels, reg=regularization)
-        predicted_labels = tf.matmul(trainingData, weights) + b
+        predicted_labels = tf.matmul(data, weights) + bias
+        loss_tensor = tf.losses.mean_squared_error(labels, predicted_labels)
     elif lossType == "CE":
-        loss_tensor = crossEntropyLoss(W=weights, b=bias, x=data, y=labels, reg=regularization)
-        predicted_labels = tf.sigmoid(tf.matmul(trainingData, weights))
+        predicted_labels = tf.sigmoid(tf.matmul(data, weights) + tf.convert_to_tensor(bias))
+        loss_tensor = tf.losses.sigmoid_cross_entropy(labels, predicted_labels)
 
-    opt = GradientDescentOptimizer(learning_rate=learning_rate)
-    opt_op = opt.minimize(loss_tensor, var_list=[W, b])
+    opt = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2, epsilon=epsilon)
+    opt_op = opt.minimize(loss_tensor)
 
     return weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization
 
-def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibatch_size, lossType = None):
+def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibatch_size, beta1, beta2, epsilon, lossType = None, use_tf=True):
     '''
 
     :param W: weight matrix
@@ -265,90 +264,124 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
 
     start_time = time.time()
     #Initialize weight matrix with random
-
-    #weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization = buildGraph(lossType="MSE")
+    use_tf = use_tf # SETTING FOR USING TF GRAPHS AND SESSIONS
 
     trainingData = np.reshape(trainingData, (trainingData.shape[0], -1))
     W = np.reshape(W, (W.shape[0] * W.shape[1], -1)) #flatten 2nd weight matrix
     N = trainingLabels.shape[0]
 
-    for epoch in range(iterations):
-        #one pass through entire dataset
+    if use_tf:
+        # initialize TF graph
+        weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization = buildGraph(beta1=beta1,
+                                                                                                    beta2=beta2,
+                                                                                                    epsilon=epsilon,
+                                                                                                    lossType="CE",
+                                                                                                    learning_rate=alpha,
+                                                                                                    minibatch_size=minibatch_size)
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
-        trainbatches = sample_batches(trainingData, trainingLabels, minibatch_size)
+        for epoch in range(iterations):
+            #one pass through entire dataset
 
-        for trainbatch in enumerate(trainbatches):
-            print("Epoch: {}, Batch: {}".format(epoch+1, trainbatch[0]))
-            batch_data = trainbatch[1][:,0:-1]
-            batch_labels = np.expand_dims(trainbatch[1][:,-1], axis=1)
+            trainbatches = sample_batches(trainingData, trainingLabels, minibatch_size)
 
-            if lossType == "MSE":
-                gradients = gradMSE(W, b, batch_data, batch_labels, reg) #trainbatch[:,0:-2], trainbatch[:,-1] gives data and label for each batch
+            for trainbatch in enumerate(trainbatches):
+                print("Epoch: {}, Batch: {}".format(epoch+1, trainbatch[0]))
+                batch_data = trainbatch[1][:,0:-1]
+                batch_labels = np.expand_dims(trainbatch[1][:,-1], axis=1)
 
-                train_loss = MSE(W, b, batch_data, batch_labels, reg)
-                val_loss = MSE(W, b, validData, validTarget, reg)
-                test_loss = MSE(W, b, testData, testTarget, reg)
+                ############ NUMPY GRADIENT DESCENT ############
+                if not use_tf:
+                    if lossType == "MSE":
+                        gradients = gradMSE(W, b, batch_data, batch_labels,
+                                            reg)  # trainbatch[:,0:-2], trainbatch[:,-1] gives data and label for each batch
 
-            elif lossType == "CE":
-                gradients = gradCE(W, b, batch_data, batch_labels, reg)
+                        train_loss = MSE(W, b, batch_data, batch_labels, reg)
+                        val_loss = MSE(W, b, validData, validTarget, reg)
+                        test_loss = MSE(W, b, testData, testTarget, reg)
 
-                train_loss = crossEntropyLoss(W, b, batch_data, batch_labels, reg)
-                val_loss = crossEntropyLoss(W, b, validData, validTarget, reg)
-                test_loss = crossEntropyLoss(W, b, testData, testTarget, reg)
+                    elif lossType == "CE":
+                        gradients = gradCE(W, b, batch_data, batch_labels, reg)
 
+                        train_loss = crossEntropyLoss(W, b, batch_data, batch_labels, reg)
+                        val_loss = crossEntropyLoss(W, b, validData, validTarget, reg)
+                        test_loss = crossEntropyLoss(W, b, testData, testTarget, reg)
 
-            grad_weights = gradients[0]
-            grad_biases = gradients[1]
+                    grad_weights = gradients[0]
+                    grad_biases = gradients[1]
+                    W = W - alpha*grad_weights #(784x1) update weights
+                    b = b - alpha*grad_biases #(784x1) update bias
+                    # standard gradient descent
+                ####################################################
 
-            W = W - alpha*grad_weights #(784x1) update weights
-            b = b - alpha*grad_biases #(784x1) update bias
+                else:
+                ######### TENSORFLOW OPTIMIZATION IMPLEMENTATION
+                    train_loss = sess.run(loss_tensor, feed_dict={data: batch_data, labels: batch_labels})
+                    val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
+                    test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
+                    sess.run(opt_op, feed_dict={data: batch_data, labels: batch_labels})
+                    # Adam
+                ##############################################
 
         ###### CALCULATE ACCURACIES AND STORE/PRINT AT EACH EPOCH #######################################################
-        # based on entire training set (unbatched)
-        if lossType == "MSE":
+        # USING ALL TRAINING DATA
 
-            predicted_train = np.matmul(trainingData, W) + b
-            predicted_val = np.matmul(validData, W) + b
-            predicted_test = np.matmul(testData, W) + b
+            if use_tf:
+                predicted_train = sess.run(predicted_labels, feed_dict={data: trainingData, labels: trainingLabels})
+                predicted_val = sess.run(predicted_labels, feed_dict={data: validData, labels: validTarget})
+                predicted_test = sess.run(predicted_labels, feed_dict={data: testData, labels: testTarget})
 
-            predicted_train[predicted_train > 0] = 1
-            predicted_train[predicted_train < 0] = 0
+            if lossType == "MSE":
 
-            predicted_val[predicted_val > 0] = 1
-            predicted_val[predicted_val < 0] = 0
-
-            predicted_test[predicted_test > 0] = 1
-            predicted_test[predicted_test < 0] = 0
-
-        elif lossType == "CE":
-
-            test = logistic_y_hat(W, trainingData, b)
-            predicted_train = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in logistic_y_hat(W, trainingData, b)]), axis=1)
-            predicted_val = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in logistic_y_hat(W, validData, b)]), axis=1)
-            predicted_test = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in logistic_y_hat(W, testData, b)]), axis=1)
+                if not use_tf:
+                    predicted_train = np.matmul(trainingData, W) + b
+                    predicted_val = np.matmul(validData, W) + b
+                    predicted_test = np.matmul(testData, W) + b
 
 
-        train_acc = np.sum(predicted_train == trainingLabels) / N
-        val_acc = np.sum(predicted_val == validTarget) / validTarget.shape[0]
-        test_acc = np.sum(predicted_test == testTarget) / testTarget.shape[0]
+                predicted_train[predicted_train > 0] = 1 # threshold the model evaluations to result in a classification
+                predicted_train[predicted_train < 0] = 0
 
-        #storing losses and accuracies
-        trainloss_list.append(train_loss)
-        valloss_list.append(val_loss)
-        testloss_list.append(test_loss)
+                predicted_val[predicted_val > 0] = 1
+                predicted_val[predicted_val < 0] = 0
 
-        train_acc_list.append(train_acc)
-        val_acc_list.append(val_acc)
-        test_acc_list.append(test_acc)
+                predicted_test[predicted_test > 0] = 1
+                predicted_test[predicted_test < 0] = 0
+
+            elif lossType == "CE":
 
 
-        print("Epoch: {}, | Training loss: {:.5f}  | Validation Loss: {:.5f} |  Test Loss: {:.5f} | "
-              "Training Accuracy: {:.5f}  | Validation Accuracy: {:.5f} |  Test Accuracy: {:.5f}"
-              .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
+                predicted_train = logistic_y_hat(W, trainingData, b)
+                predicted_val = logistic_y_hat(W, validData, b)
+                predicted_test = logistic_y_hat(W, testData, b)
 
-        if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
-           pass
-        #############################################################################################################
+                predicted_train = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_train]), axis=1) # threshold the model evaluations to result in a classification
+                predicted_val = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_val]), axis=1)
+                predicted_test = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_test]), axis=1)
+
+            train_acc = np.sum(predicted_train == trainingLabels) / N
+            val_acc = np.sum(predicted_val == validTarget) / validTarget.shape[0]
+            test_acc = np.sum(predicted_test == testTarget) / testTarget.shape[0]
+
+            #storing losses and accuracies
+            trainloss_list.append(train_loss)
+            valloss_list.append(val_loss)
+            testloss_list.append(test_loss)
+
+            train_acc_list.append(train_acc)
+            val_acc_list.append(val_acc)
+            test_acc_list.append(test_acc)
+
+
+            print("Epoch: {}, | Training loss: {:.5f}  | Validation Loss: {:.5f} |  Test Loss: {:.5f} | "
+                  "Training Accuracy: {:.5f}  | Validation Accuracy: {:.5f} |  Test Accuracy: {:.5f}"
+                  .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
+
+            if not use_tf:
+                if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
+                   pass
+            #############################################################################################################
 
     elapsed_time = int(time.time() - start_time)
 
@@ -375,7 +408,7 @@ if test_GD:
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
 
 if test_SGD:
-    W, b = SGD(W, b, trainData, trainTarget, lrs[0], epochs, reg[0], error_tolerance, 500, 'CE')
+    W, b = SGD(W, b, trainData, trainTarget, lrs[0], epochs, reg[0], error_tolerance, 500, 0.95, 0.99, 1e-09, 'CE', use_tf=True)
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
 
 if test_normal:
