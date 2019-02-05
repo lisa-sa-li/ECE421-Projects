@@ -351,10 +351,10 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
 
             elif lossType == "CE":
 
-
-                predicted_train = logistic_y_hat(W, trainingData, b)
-                predicted_val = logistic_y_hat(W, validData, b)
-                predicted_test = logistic_y_hat(W, testData, b)
+                if not use_tf:
+                    predicted_train = logistic_y_hat(W, trainingData, b)
+                    predicted_val = logistic_y_hat(W, validData, b)
+                    predicted_test = logistic_y_hat(W, testData, b)
 
                 predicted_train = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_train]), axis=1) # threshold the model evaluations to result in a classification
                 predicted_val = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_val]), axis=1)
