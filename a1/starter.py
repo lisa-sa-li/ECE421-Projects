@@ -321,6 +321,7 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
                     val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
                     test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
                     sess.run(opt_op, feed_dict={data: batch_data, labels: batch_labels})
+                    #print(sess.run(weights))
                     # Adam
                 ##############################################
 
