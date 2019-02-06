@@ -382,7 +382,7 @@ if test_GD:
 
 if test_SGD:
     #SGD(trainingData, trainingLabels, alpha, iterations, regularization, minibatch_size, beta1, beta2, epsilon, lossType = None)
-    W, b = SGD(trainData, trainTarget, 0.001, epochs, 0, 500, 0.9, 0.999, 1e-8, lossType ='MSE')
+    W, b = SGD(trainData, trainTarget, 0.001, epochs, 0, 500, 0.9, 0.999, 1e-4, lossType ='CE')
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
 
 if test_normal:

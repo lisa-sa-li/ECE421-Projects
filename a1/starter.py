@@ -270,9 +270,9 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
     W = np.reshape(W, (W.shape[0] * W.shape[1], -1)) #flatten 2nd weight matrix
     N = trainingLabels.shape[0]
 
-    if use_tf:
-        # initialize TF graph
-        weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization = buildGraph(beta1=beta1,
+
+    # initialize TF graph
+    weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization = buildGraph(beta1=beta1,
                                                                                                     beta2=beta2,
                                                                                                     epsilon=epsilon,
                                                                                                     lossType="CE",
@@ -291,36 +291,13 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
                 batch_data = trainbatch[1][:,0:-1]
                 batch_labels = np.expand_dims(trainbatch[1][:,-1], axis=1)
 
-                ############ NUMPY GRADIENT DESCENT ############
-                if not use_tf:
-                    if lossType == "MSE":
-                        gradients = gradMSE(W, b, batch_data, batch_labels,
-                                            reg)  # trainbatch[:,0:-2], trainbatch[:,-1] gives data and label for each batch
 
-                        train_loss = MSE(W, b, batch_data, batch_labels, reg)
-                        val_loss = MSE(W, b, validData, validTarget, reg)
-                        test_loss = MSE(W, b, testData, testTarget, reg)
 
-                    elif lossType == "CE":
-                        gradients = gradCE(W, b, batch_data, batch_labels, reg)
-
-                        train_loss = crossEntropyLoss(W, b, batch_data, batch_labels, reg)
-                        val_loss = crossEntropyLoss(W, b, validData, validTarget, reg)
-                        test_loss = crossEntropyLoss(W, b, testData, testTarget, reg)
-
-                    grad_weights = gradients[0]
-                    grad_biases = gradients[1]
-                    W = W - alpha*grad_weights #(784x1) update weights
-                    b = b - alpha*grad_biases #(784x1) update bias
-                    # standard gradient descent
-                ####################################################
-
-                else:
                 ######### TENSORFLOW OPTIMIZATION IMPLEMENTATION
-                    train_loss = sess.run(loss_tensor, feed_dict={data: batch_data, labels: batch_labels})
-                    val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
-                    test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
-                    sess.run(opt_op, feed_dict={data: batch_data, labels: batch_labels})
+                train_loss = sess.run(loss_tensor, feed_dict={data: batch_data, labels: batch_labels})
+                val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
+                test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
+                sess.run(opt_op, feed_dict={data: batch_data, labels: batch_labels})
                     # Adam
                 ##############################################
 
@@ -333,11 +310,6 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
                 predicted_test = sess.run(predicted_labels, feed_dict={data: testData, labels: testTarget})
 
             if lossType == "MSE":
-
-                if not use_tf:
-                    predicted_train = np.matmul(trainingData, W) + b
-                    predicted_val = np.matmul(validData, W) + b
-                    predicted_test = np.matmul(testData, W) + b
 
 
                 predicted_train[predicted_train > 0] = 1 # threshold the model evaluations to result in a classification
@@ -409,7 +381,7 @@ if test_GD:
 
 if test_SGD:
     W, b = SGD(W, b, trainData, trainTarget, lrs[0], epochs, reg[0], error_tolerance, 500, 0.95, 0.99, 1e-09, 'CE', use_tf=True)
-    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
+    plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
 
 if test_normal:
     w_least_squares = WLS(trainData, trainTarget, reg[0])
