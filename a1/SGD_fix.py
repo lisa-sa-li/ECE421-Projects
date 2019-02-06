@@ -48,7 +48,7 @@ W = np.zeros((28, 28))
 b = 0
 lrs = [0.005, 0.001, 0.0001]
 error_tolerance = 1e-7
-epochs = 500
+epochs = 700
 reg = [0, 0.001, 0.1, 0.5]
 
 
@@ -215,7 +215,7 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
               .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
-           pass
+           break
 
     elapsed_time = int(time.time() - start_time)
 
@@ -257,7 +257,7 @@ def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rat
 
     return W, b, x, pred, y, loss, opt_op, reg
 
-def SGD(trainingData, trainingLabels, alpha, iterations, regularization, EPS, minibatch_size, beta1, beta2, epsilon, lossType = None):
+def SGD(trainingData, trainingLabels, alpha, iterations, regularization, minibatch_size, beta1, beta2, epsilon, lossType = None):
     '''
 
     :param W: weight matrix
@@ -294,7 +294,7 @@ def SGD(trainingData, trainingLabels, alpha, iterations, regularization, EPS, mi
             trainbatches = sample_batches(trainingData, trainingLabels, minibatch_size)
 
             for trainbatch in enumerate(trainbatches):
-                print("Epoch: {}, Batch: {}".format(epoch + 1, trainbatch[0]))
+                #print("Epoch: {}, Batch: {}".format(epoch + 1, trainbatch[0]))
                 batch_data = trainbatch[1][:, 0:-1]
                 batch_labels = np.expand_dims(trainbatch[1][:, -1], axis=1)
 
@@ -381,7 +381,8 @@ if test_GD:
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
 
 if test_SGD:
-    W, b = SGD(trainData, trainTarget, lrs[0], epochs, reg[1], error_tolerance, 500, 0.9, 0.999, 1e-8, lossType ='MSE')
+    #SGD(trainingData, trainingLabels, alpha, iterations, regularization, minibatch_size, beta1, beta2, epsilon, lossType = None)
+    W, b = SGD(trainData, trainTarget, 0.001, epochs, 0, 500, 0.9, 0.999, 1e-8, lossType ='MSE')
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
 
 if test_normal:
