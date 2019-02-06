@@ -48,7 +48,7 @@ W = np.zeros((28, 28))
 b = 0
 lrs = [0.005, 0.001, 0.0001]
 error_tolerance = 1e-7
-epochs = 500
+epochs = 700
 reg = [0, 0.001, 0.1, 0.5]
 
 
@@ -215,7 +215,7 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
               .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
 
         if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
-           pass
+           break
 
     elapsed_time = int(time.time() - start_time)
 
@@ -225,30 +225,39 @@ def grad_descent(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS
 
 
 
-def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=0.001, minibatch_size=None):
-
-    # Initialize weight and bias tensors
-    weights = tf.reshape(tf.truncated_normal(W.shape, stddev=0.5, dtype=tf.float32), (W.shape[0] * W.shape[1], -1))
-    bias = tf.Variable(tf.ones(1), name="bias")
-    data = tf.placeholder(tf.float32, (None, trainData.shape[1]*trainData.shape[2]))
-    labels = tf.placeholder(tf.int8, (None, trainTarget.shape[1]))
-    regularization = tf.Variable(tf.ones(1), name="reg")
-
-
+def buildGraph(beta1=None, beta2=None, epsilon=None, lossType=None, learning_rate=0.001):
     tf.set_random_seed(421)
+    # Initialize weight and bias tensors
+    W = tf.Variable(tf.truncated_normal(shape=(784, 1), stddev=0.5, dtype=tf.float32))
+    b = tf.Variable(tf.truncated_normal(shape=(1, 1), mean=0, stddev=0.5, dtype=tf.float32))
+
+    x = tf.placeholder(tf.float32, shape=(None, 784), name='x')
+    y = tf.placeholder(tf.float32, shape=(None, 1), name='y')
+
+    reg = tf.placeholder(tf.float32,  name='reg')
+
+    pred_MSE = tf.add(tf.matmul(x, W), b, name='predictionMSE')
+
+    pred_CE= tf.sigmoid(pred_MSE, name='predictionCE')
+
+
     if lossType == "MSE":
-        predicted_labels = tf.matmul(data, weights) + bias
-        loss_tensor = tf.losses.mean_squared_error(labels, predicted_labels)
+
+        pred = pred_MSE
+
+        loss = tf.losses.mean_squared_error(labels=tf.reshape(y, [tf.shape(y)[0], 1]), predictions=pred_MSE) + tf.multiply(tf.reduce_sum(tf.square(W)), reg/2)
+
     elif lossType == "CE":
-        predicted_labels = tf.sigmoid(tf.matmul(data, weights) + tf.convert_to_tensor(bias))
-        loss_tensor = tf.losses.sigmoid_cross_entropy(labels, predicted_labels)
+
+        pred = pred_CE
+        loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.reshape(y, [tf.shape(y)[0], 1]), logits=pred_CE)) + tf.multiply(tf.reduce_sum(tf.square(W)), reg/2)
 
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2, epsilon=epsilon)
-    opt_op = opt.minimize(loss_tensor)
+    opt_op = opt.minimize(loss)
 
-    return weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization
+    return W, b, x, pred, y, loss, opt_op, reg
 
-def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibatch_size, beta1, beta2, epsilon, lossType = None, use_tf=True):
+def SGD(trainingData, trainingLabels, alpha, iterations, regularization, minibatch_size, beta1, beta2, epsilon, lossType = None):
     '''
 
     :param W: weight matrix
@@ -264,20 +273,18 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
 
     start_time = time.time()
     #Initialize weight matrix with random
-    use_tf = use_tf # SETTING FOR USING TF GRAPHS AND SESSIONS
+
 
     trainingData = np.reshape(trainingData, (trainingData.shape[0], -1))
-    W = np.reshape(W, (W.shape[0] * W.shape[1], -1)) #flatten 2nd weight matrix
+
     N = trainingLabels.shape[0]
 
-
+    # number of batches to go through entire dataset
+    num_batches = int(N / minibatch_size)
     # initialize TF graph
-    weights, bias, data, predicted_labels, labels, loss_tensor, opt_op, regularization = buildGraph(beta1=beta1,
-                                                                                                    beta2=beta2,
-                                                                                                    epsilon=epsilon,
-                                                                                                    lossType="CE",
-                                                                                                    learning_rate=alpha,
-                                                                                                    minibatch_size=minibatch_size)
+    W, b, x, pred, y, loss, opt_op, reg = buildGraph(beta1=beta1, beta2=beta2, epsilon=epsilon, lossType=lossType, learning_rate=alpha)
+
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
@@ -287,60 +294,49 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
             trainbatches = sample_batches(trainingData, trainingLabels, minibatch_size)
 
             for trainbatch in enumerate(trainbatches):
-                print("Epoch: {}, Batch: {}".format(epoch+1, trainbatch[0]))
-                batch_data = trainbatch[1][:,0:-1]
-                batch_labels = np.expand_dims(trainbatch[1][:,-1], axis=1)
+                #print("Epoch: {}, Batch: {}".format(epoch + 1, trainbatch[0]))
+                batch_data = trainbatch[1][:, 0:-1]
+                batch_labels = np.expand_dims(trainbatch[1][:, -1], axis=1)
+
+
+                sess.run(opt_op, feed_dict={x: batch_data, y: batch_labels, reg: regularization})
 
 
 
-                ######### TENSORFLOW OPTIMIZATION IMPLEMENTATION
-<<<<<<< HEAD
-                    train_loss = sess.run(loss_tensor, feed_dict={data: batch_data, labels: batch_labels})
-                    val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
-                    test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
-                    sess.run(opt_op, feed_dict={data: batch_data, labels: batch_labels})
-                    #print(sess.run(weights))
-                train_loss = sess.run(loss_tensor, feed_dict={data: batch_data, labels: batch_labels})
-                val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
-                test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
-                sess.run(opt_op, feed_dict={data: batch_data, labels: batch_labels})
-                    # Adam
-                ##############################################
+            # At every epoch store the losses
+            train_loss = sess.run(loss, feed_dict={x: trainingData, y: trainTarget, reg: regularization})
+            val_loss = sess.run(loss, feed_dict={x: validData, y: validTarget, reg: regularization})
+            test_loss = sess.run(loss, feed_dict={x: testData, y: testTarget, reg: regularization})
+
+
 
         ###### CALCULATE ACCURACIES AND STORE/PRINT AT EACH EPOCH #######################################################
         # USING ALL TRAINING DATA
 
-            if use_tf:
-                predicted_train = sess.run(predicted_labels, feed_dict={data: trainingData, labels: trainingLabels})
-                predicted_val = sess.run(predicted_labels, feed_dict={data: validData, labels: validTarget})
-                predicted_test = sess.run(predicted_labels, feed_dict={data: testData, labels: testTarget})
+            '''
+            Get the predicted tensor for train, val, and test sets
+            '''
+            predicted_train = sess.run(pred, feed_dict={x: trainingData})
+            predicted_val = sess.run(pred, feed_dict={x: validData})
+            predicted_test = sess.run(pred, feed_dict={x: testData})
+
+            '''
+            Calculate accuracy based on losstype
+            '''
 
             if lossType == "MSE":
+                train_acc = (trainTarget == (predicted_train > 0)).sum() / N
+                val_acc = (validTarget == (predicted_val > 0)).sum() / validTarget.shape[0]
+                test_acc = (testTarget == (predicted_test > 0)).sum() / testTarget.shape[0]
 
 
-                predicted_train[predicted_train > 0] = 1 # threshold the model evaluations to result in a classification
-                predicted_train[predicted_train < 0] = 0
-
-                predicted_val[predicted_val > 0] = 1
-                predicted_val[predicted_val < 0] = 0
-
-                predicted_test[predicted_test > 0] = 1
-                predicted_test[predicted_test < 0] = 0
 
             elif lossType == "CE":
+                train_acc = (trainTarget == (predicted_train > 0.5)).sum() / N
+                val_acc = (validTarget == (predicted_val > 0.5)).sum() / validTarget.shape[0]
+                test_acc = (testTarget == (predicted_test > 0.5)).sum() / testTarget.shape[0]
 
-                if not use_tf:
-                    predicted_train = logistic_y_hat(W, trainingData, b)
-                    predicted_val = logistic_y_hat(W, validData, b)
-                    predicted_test = logistic_y_hat(W, testData, b)
 
-                predicted_train = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_train]), axis=1) # threshold the model evaluations to result in a classification
-                predicted_val = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_val]), axis=1)
-                predicted_test = np.expand_dims(np.array([1 if i > 0.5 else 0 for i in predicted_test]), axis=1)
-
-            train_acc = np.sum(predicted_train == trainingLabels) / N
-            val_acc = np.sum(predicted_val == validTarget) / validTarget.shape[0]
-            test_acc = np.sum(predicted_test == testTarget) / testTarget.shape[0]
 
             #storing losses and accuracies
             trainloss_list.append(train_loss)
@@ -356,9 +352,8 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
                   "Training Accuracy: {:.5f}  | Validation Accuracy: {:.5f} |  Test Accuracy: {:.5f}"
                   .format(epoch + 1, train_loss, val_loss, test_loss, train_acc, val_acc, test_acc))
 
-            if not use_tf:
-                if np.linalg.norm(grad_weights) <= EPS or np.linalg.norm(grad_biases) <= EPS:
-                   pass
+
+
             #############################################################################################################
 
     elapsed_time = int(time.time() - start_time)
@@ -386,7 +381,8 @@ if test_GD:
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, True)
 
 if test_SGD:
-    W, b = SGD(W, b, trainData, trainTarget, lrs[0], epochs, reg[0], error_tolerance, 500, 0.95, 0.99, 1e-09, 'CE', use_tf=True)
+    #SGD(trainingData, trainingLabels, alpha, iterations, regularization, minibatch_size, beta1, beta2, epsilon, lossType = None)
+    W, b = SGD(trainData, trainTarget, 0.001, epochs, 0, 500, 0.9, 0.999, 1e-4, lossType ='CE')
     plot(epochs, trainloss_list, valloss_list, testloss_list, train_acc_list, val_acc_list, test_acc_list, False)
 
 if test_normal:
