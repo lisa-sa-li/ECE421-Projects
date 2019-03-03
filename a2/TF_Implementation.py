@@ -55,6 +55,7 @@ testData = np.expand_dims(testData, 3)
 epochs = 50
 batch_size = 32
 lr = 1e-4
+reg = 0.1
 
 num_classes = 10
 
@@ -93,14 +94,18 @@ def CNN_model(x, weights, biases):
 
     maxpool = tf.nn.max_pool(bn_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
+    # shape of maxpool = (batch_size, 14, 14, 32)
     # Flatten Layer
     flatten = tf.reshape(maxpool, [-1, weights['fc1_weight'].get_shape().as_list()[0]])
 
     # fully connected layer 1 (784 output units)
     fc1 = tf.add(tf.matmul(flatten, weights['fc1_weight']), biases['fc1_bias'])
 
+    # dropout layer
+    dropout = tf.layers.dropout(fc1, rate=0.9)
+
     # second RELU layer
-    relu2 = tf.nn.relu(fc1)
+    relu2 = tf.nn.relu(dropout)
 
     # fully connected layer 2 (10 output units)
     fc2 = tf.add(tf.matmul(relu2, weights['out_weight']), biases['out_bias'])
@@ -120,14 +125,18 @@ newtrain, newvalid, newtest = convertOneHot(trainTarget, validTarget, testTarget
 
 pred = CNN_model(x, weights, biases)
 
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=pred))
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=pred)) + \
+       tf.multiply(tf.reduce_sum(tf.square(weights['conv2d_filter1'])) + tf.reduce_sum(tf.square(weights['fc1_weight']))
+                   + tf.reduce_sum(tf.square(weights['out_weight'])), reg/2)
 
 optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(cost)
+
+
 
 correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 
 #calculate accuracy across all the given images and average them out.
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float64))
 
 
 
@@ -154,6 +163,6 @@ with tf.Session() as sess:
             #test_loss, test_acc = sess.run([cost, accuracy], feed_dict={x: testData, y: newtest})
 
 
-            print("Epoch: {}, | Training loss: {:.5f} "
+        print("Epoch: {}, | Training loss: {:.5f} "
                   "Training Accuracy: {:.5f}  "
                   .format(epoch + 1, train_loss, train_acc))
