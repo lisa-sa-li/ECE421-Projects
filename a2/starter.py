@@ -34,7 +34,6 @@ def convertOneHot(trainTarget, validTarget, testTarget):
         newtest[item][testTarget[item]] = 1
     return newtrain, newvalid, newtest
 
-
 def shuffle(trainData, trainTarget):
     np.random.seed(421)
     randIndx = np.arange(len(trainData))
@@ -42,7 +41,6 @@ def shuffle(trainData, trainTarget):
     np.random.shuffle(randIndx)
     data, target = trainData[randIndx], target[randIndx]
     return data, target
-
 
 def relu(x):
     return max(0,x)
@@ -106,16 +104,17 @@ def forward_propagation(data, params):
 def backward_propagation(params, intermediates_dict, data, labels):
     N = data.shape[0]
 
+    W_h = params['W_h']
     W_o = params['W_o']
     S_h = intermediates_dict['S_h']
     S_o = intermediates_dict['S_o']
     Z_h = intermediates_dict['Z_h']
 
     # Backward propagation: calculate dW_h, db_h, dW_o, db_o.
-    dW_o = (1 / N) * np.sum(np.dot((S_o-labels), S_h), axis=0) #shape: (Kx10)
+    dW_o = (1 / N) * np.sum(np.outer((S_o-labels), S_h), axis=0) #shape: (Kx10)
     db_o = (1 / N) * np.sum((S_o-labels), axis=0) #shape: (1x10)
-    dW_h = (1 / N) * np.sum(np.dot(np.dot(np.multiply(data, (Z_h>0)), np.sum(S_o-labels)), W_o))
-    db_h = (1 / N) * np.sum(np.sum(np.dot(S_o-labels, W_o)))
+    dW_h = (1 / N) * np.sum(np.multiply(np.outer(data, (np.dot(np.transpose(W_h),data)>0)), np.dot(W_o, (S_o-labels))))
+    db_h = (1 / N) * np.sum(np.multiply(np.dot(np.transpose(W_h),data)>0, np.dot(W_o, (S_o-labels))))
 
     grads = {"dW_o": dW_o, "db_o": db_o, "dW_h": dW_h, "db_h": db_h}
 
@@ -147,7 +146,7 @@ def update_params(params, grads, learning_rate=1, momentum_gamma=0.9):
 
 
 def training_loop(data, labels, size_h, epochs):
-    
+
     np.random.seed(9)
 
     # Initialize parameters, then retrieve W1, b1, W2, b2. Inputs: "n_x, n_h, n_y". Outputs = "W1, b1, W2, b2, parameters".
@@ -164,8 +163,7 @@ def training_loop(data, labels, size_h, epochs):
 
         params = update_parameters(params, grads)
 
-        print ("Loss after iteration %i: %f" % (i, cost))
-
+        print("Loss after iteration %i: %f" % (i, cost))
 
 def main():
     trainData, validData, testData, trainTarget, validTarget, testTarget = loadData()
