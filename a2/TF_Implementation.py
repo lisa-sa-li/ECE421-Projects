@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os
+from plotting import plot
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Load the data
@@ -55,7 +56,7 @@ testData = np.expand_dims(testData, 3)
 epochs = 50
 batch_size = 32
 lr = 1e-4
-reg = 0.1
+reg = 0
 
 num_classes = 10
 
@@ -102,10 +103,10 @@ def CNN_model(x, weights, biases):
     fc1 = tf.add(tf.matmul(flatten, weights['fc1_weight']), biases['fc1_bias'])
 
     # dropout layer
-    dropout = tf.layers.dropout(fc1, rate=0.9)
+    #dropout = tf.layers.dropout(fc1, rate=0.9)
 
     # second RELU layer
-    relu2 = tf.nn.relu(dropout)
+    relu2 = tf.nn.relu(fc1)
 
     # fully connected layer 2 (10 output units)
     fc2 = tf.add(tf.matmul(relu2, weights['out_weight']), biases['out_bias'])
@@ -143,26 +144,59 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float64))
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 
-    num_batches = int(trainData.shape[0] / batch_size)
+    num_batches = int(trainTarget.shape[0] / batch_size)
+    num_batches_val = int(validTarget.shape[0] / batch_size)
+    num_batches_test = int(testTarget.shape[0] / batch_size)
+
+    train_loss_list = []
+    val_loss_list = []
+    test_loss_list = []
+    train_acc_list = []
+    val_acc_list = []
+    test_acc_list = []
+
     for epoch in range(epochs):
 
-        shuffle(trainData, newtrain)
+        trainData, newtrain = shuffle(trainData, newtrain)
 
         for i in range(num_batches):
             train_Batch = trainData[i * batch_size: min((i+1)*batch_size, len(trainData))]
             train_Target_Batch = newtrain[i * batch_size: min((i+1)*batch_size, len(trainData))]
 
+            if i <= num_batches_val:
+                val_Batch = validData[i * batch_size: min((i + 1) * batch_size, len(validData))]
+                val_Target_Batch = newvalid[i * batch_size: min((i + 1) * batch_size, len(validData))]
+                sess.run(optimizer, feed_dict={x: val_Batch, y: val_Target_Batch})
+                valid_loss, valid_acc = sess.run([cost, accuracy], feed_dict={x: val_Batch, y: val_Target_Batch})
+
+            if i <= num_batches_test:
+
+                test_Batch = testData[i * batch_size: min((i + 1) * batch_size, len(testData))]
+                test_Target_Batch = newtest[i * batch_size: min((i + 1) * batch_size, len(testData))]
+                sess.run(optimizer, feed_dict={x: test_Batch, y: test_Target_Batch})
+                test_loss, test_acc = sess.run([cost, accuracy], feed_dict={x: test_Batch, y: test_Target_Batch})
+
             sess.run(optimizer, feed_dict={x: train_Batch, y: train_Target_Batch })
+
 
 
         # at each epoch calculate the loss and accuracy
             train_loss, train_acc = sess.run([cost, accuracy], feed_dict={x: train_Batch,
                                                               y: train_Target_Batch})
 
-            #valid_loss, valid_acc = sess.run([cost, accuracy], feed_dict={x: validData, y: newvalid})
-            #test_loss, test_acc = sess.run([cost, accuracy], feed_dict={x: testData, y: newtest})
+            print("Epoch: {}, | Training loss: {:.5f} | Validation loss: {:.5f} | Test loss: {:.5f}  "
+                  "Training Accuracy: {:.5f} | Validation Accuracy: {:.5f} | Test Accuracy: {:.5f} "
+                  .format(epoch + 1, train_loss, valid_loss, test_loss, train_acc, valid_acc, test_acc))
+
+        train_loss_list.append(train_loss)
+        val_loss_list.append(valid_loss)
+        test_loss_list.append(test_loss)
+        train_acc_list.append(train_acc)
+        val_acc_list.append(valid_acc)
+        test_acc_list.append(test_acc)
 
 
-        print("Epoch: {}, | Training loss: {:.5f} "
-                  "Training Accuracy: {:.5f}  "
-                  .format(epoch + 1, train_loss, train_acc))
+
+
+
+plot(epochs, train_loss_list, val_loss_list, test_loss_list, train_acc_list, val_acc_list, test_acc_list)
