@@ -44,20 +44,22 @@ def shuffle(trainData, trainTarget):
 
 
 def relu(x):
-    # TODO
+    return max(0,x)
 
 def softmax(x):
-    # TODO
-
+    return np.exp(x)/ np.exp(x).sum()
 
 def computeLayer(X, W, b):
-    # TODO
+    return np.transpose(W)*X + b
 
 def CE(target, prediction):
-
-    # TODO
+    return -np.sum(target * np.log(prediction))/ prediction.shape[0]
 
 def gradCE(target, prediction):
+    return -np.sum(target/prediction)/ prediction.shape[0]
 
-    # TODO
+def main():
+    
 
+if __name__ == "__main__":
+    main()
