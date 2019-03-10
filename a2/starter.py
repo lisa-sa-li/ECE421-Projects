@@ -149,7 +149,6 @@ def training_loop(data, labels, size_h, epochs):
 
     np.random.seed(9)
 
-    # Initialize parameters, then retrieve W1, b1, W2, b2. Inputs: "n_x, n_h, n_y". Outputs = "W1, b1, W2, b2, parameters".
     params = initialize_params(data.shape[1], size_h, labels.shape[1])
 
     #Gradient descent
