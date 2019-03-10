@@ -147,18 +147,7 @@ def update_params(params, grads, learning_rate=1, momentum_gamma=0.9):
 
 
 def training_loop(data, labels, size_h, epochs):
-    """
-    Arguments:
-    X -- dataset of shape (2, number of examples)
-    Y -- labels of shape (1, number of examples)
-    n_h -- size of the hidden layer
-    num_iterations -- Number of iterations in gradient descent loop
-    print_cost -- if True, print the cost every 1000 iterations
-
-    Returns:
-    parameters -- parameters learnt by the model. They can then be used to predict.
-    """
-
+    
     np.random.seed(9)
 
     # Initialize parameters, then retrieve W1, b1, W2, b2. Inputs: "n_x, n_h, n_y". Outputs = "W1, b1, W2, b2, parameters".
