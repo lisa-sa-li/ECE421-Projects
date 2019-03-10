@@ -43,13 +43,13 @@ def shuffle(trainData, trainTarget):
     return data, target
 
 def relu(x):
-    return max(0,x)
+    return np.maximum(0,x)
 
 def softmax(x):
     return np.exp(x)/ np.exp(x).sum()
 
 def computeLayer(X, W, b):
-    return np.dot(X, W) + b
+    return np.dot(X, W) + np.repeat(np.transpose(b), X.shape[0], axis=0)
 
 def CE(target, prediction):
     return -np.sum(target * np.log(prediction))/ prediction.shape[0]
@@ -94,7 +94,7 @@ def forward_propagation(data, params):
     Z_h = computeLayer(data, W_h, b_h)
     S_h = relu(Z_h)
     Z_o = computeLayer(S_h, W_o, b_o)
-    S_o = softmax(Z_o, axis=0)
+    S_o = softmax(Z_o)
 
     intermediates_dict = {"Z_h": Z_h, "S_h": S_h, "Z_o": Z_o, "S_o": S_o}
 
