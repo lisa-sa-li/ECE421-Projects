@@ -5,3 +5,4 @@ by: Andy, Ryan
 
 Asssignment 1: Linear & Logistic Regression
 
+Assignment 2: Neural Networks
