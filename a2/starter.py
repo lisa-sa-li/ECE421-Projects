@@ -166,7 +166,7 @@ def training_loop(data, labels, size_h, epochs):
 
         grads = backward_propagation(params, intermediates_dict, data, labels)
 
-        params = update_parameters(params, grads)
+        params = update_params(params, grads)
 
         print("Loss after iteration %i: %f" % (i, cost))
 
