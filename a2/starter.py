@@ -45,6 +45,9 @@ def shuffle(trainData, trainTarget):
 def relu(x):
     return np.maximum(0,x)
 
+def GradReLU(x):
+    return np.where(x <= 0, 0, 1)
+
 def softmax(x):
     return np.exp(x)/ np.exp(x).sum()
 
@@ -111,10 +114,13 @@ def backward_propagation(params, intermediates_dict, data, labels):
     Z_h = intermediates_dict['Z_h']
 
     # Backward propagation: calculate dW_h, db_h, dW_o, db_o.
-    dW_o = (1 / N) * np.sum(np.outer((S_o-labels), S_h), axis=0) #shape: (Kx10)
-    db_o = (1 / N) * np.sum((S_o-labels), axis=0) #shape: (1x10)
-    dW_h = (1 / N) * np.sum(np.multiply(np.outer(data, (np.dot(np.transpose(W_h),data)>0)), np.dot(W_o, (S_o-labels))))
-    db_h = (1 / N) * np.sum(np.multiply(np.dot(np.transpose(W_h),data)>0, np.dot(W_o, (S_o-labels))))
+    dW_o = (1 / N) * np.matmul(S_h.T, S_o - labels) #shape: (Kx10)
+    db_o = (1 / N) * np.sum(S_o - labels, axis=0)    #shape: (1x10)
+
+    mat1 = np.multiply(GradReLU(Z_h), np.matmul(S_o - labels, W_o.T))
+    dW_h = (1 / N) * np.matmul(data.T, mat1)
+
+    db_h = (1 / N) * np.sum(np.multiply(GradReLU(S_o) , np.matmul(S_o - labels, W_o.T)), axis=0)
 
     grads = {"dW_o": dW_o, "db_o": db_o, "dW_h": dW_h, "db_h": db_h}
 
