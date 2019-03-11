@@ -120,7 +120,7 @@ def backward_propagation(params, intermediates_dict, data, labels):
     mat1 = np.multiply(GradReLU(Z_h), np.matmul(S_o - labels, W_o.T))
     dW_h = (1 / N) * np.matmul(data.T, mat1)
 
-    db_h = (1 / N) * np.sum(np.multiply(GradReLU(S_o) , np.matmul(S_o - labels, W_o.T)), axis=0)
+    db_h = (1 / N) * np.sum(mat1, axis=0)
 
     grads = {"dW_o": dW_o, "db_o": db_o, "dW_h": dW_h, "db_h": db_h}
 
