@@ -64,7 +64,7 @@ def CE(target, prediction):
 
 def gradCE(target, prediction):
     N = target.shape[0]
-    return ((-1 / N) * np.sum(np.division(target, prediction), axis=0))
+    return (-1 / N) * np.sum(np.division(target, prediction))
 
 
 # load the data
@@ -84,7 +84,7 @@ testData = np.reshape(testData, (testData.shape[0], -1))
 # Hyperparameters
 
 epochs = 200
-hidden_size = 100
+hidden_size = 1000
 lr = 0.01
 gamma = 0.9
 
