@@ -103,7 +103,7 @@ def CNN_model(x, weights, biases):
     fc1 = tf.add(tf.matmul(flatten, weights['fc1_weight']), biases['fc1_bias'])
 
     # dropout layer
-    dropout = tf.layers.dropout(fc1, rate=0.5, seed=0)
+    dropout = tf.layers.dropout(fc1, rate=0.5, seed=0, training=True)
 
     # second RELU layer
     relu2 = tf.nn.relu(dropout)
@@ -158,47 +158,38 @@ with tf.Session() as sess:
     for epoch in range(epochs):
 
         trainData, newtrain = shuffle(trainData, newtrain)
-        #validData, newvalid = shuffle(validData, newvalid)
-        #testData, newtest = shuffle(testData, newtest)
+
 
         for i in range(num_batches):
             train_Batch = trainData[i * batch_size: min((i+1)*batch_size, len(trainData))]
             train_Target_Batch = newtrain[i * batch_size: min((i+1)*batch_size, len(trainData))]
 
-            if i < num_batches_val:
-                val_Batch = validData[i * batch_size: min((i + 1) * batch_size, len(validData))]
-                val_Target_Batch = newvalid[i * batch_size: min((i + 1) * batch_size, len(validData))]
-                sess.run(optimizer, feed_dict={x: val_Batch, y: val_Target_Batch})
-                valid_loss, valid_acc = sess.run([cost, accuracy], feed_dict={x: val_Batch, y: val_Target_Batch})
-
-            if i < num_batches_test:
-
-                test_Batch = testData[i * batch_size: min((i + 1) * batch_size, len(testData))]
-                test_Target_Batch = newtest[i * batch_size: min((i + 1) * batch_size, len(testData))]
-                sess.run(optimizer, feed_dict={x: test_Batch, y: test_Target_Batch})
-                test_loss, test_acc = sess.run([cost, accuracy], feed_dict={x: test_Batch, y: test_Target_Batch})
 
             sess.run(optimizer, feed_dict={x: train_Batch, y: train_Target_Batch })
 
 
 
         # at each epoch calculate the loss and accuracy
-            train_loss, train_acc = sess.run([cost, accuracy], feed_dict={x: train_Batch,
-                                                              y: train_Target_Batch})
+        train_loss, train_acc = sess.run([cost, accuracy], feed_dict={x: trainData,
+                                                          y: newtrain})
+        valid_loss, valid_acc = sess.run([cost, accuracy], feed_dict={x: validData,
+                                                                      y: newvalid})
+        test_loss, test_acc = sess.run([cost, accuracy], feed_dict={x: testData,
+                                                                      y: newtest})
 
-            print("Epoch: {}, | Training loss: {:.5f} | Validation loss: {:.5f} | Test loss: {:.5f}  "
-                  "Training Accuracy: {:.5f} | Validation Accuracy: {:.5f} | Test Accuracy: {:.5f} "
-                  .format(epoch + 1, train_loss, valid_loss, test_loss, train_acc, valid_acc, test_acc))
+        print("Epoch: {}, | Training loss: {:.5f} | Validation loss: {:.5f} | Test loss: {:.5f}  "
+              "Training Accuracy: {:.5f} | Validation Accuracy: {:.5f} | Test Accuracy: {:.5f} "
+              .format(epoch + 1, train_loss, valid_loss, test_loss, train_acc, valid_acc, test_acc))
 
-            train_loss_list.append(train_loss)
-            val_loss_list.append(valid_loss)
-            test_loss_list.append(test_loss)
-            train_acc_list.append(train_acc)
-            val_acc_list.append(valid_acc)
-            test_acc_list.append(test_acc)
-
-
+        train_loss_list.append(train_loss)
+        val_loss_list.append(valid_loss)
+        test_loss_list.append(test_loss)
+        train_acc_list.append(train_acc)
+        val_acc_list.append(valid_acc)
+        test_acc_list.append(test_acc)
 
 
 
-plot(len(train_loss_list[::20]), train_loss_list[::20], val_loss_list[::20], test_loss_list[::20], train_acc_list[::20], val_acc_list[::20], test_acc_list[::20])
+
+
+plot(epochs, train_loss_list, val_loss_list, test_loss_list, train_acc_list, val_acc_list, test_acc_list)

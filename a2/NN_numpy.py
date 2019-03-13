@@ -83,7 +83,7 @@ testData = np.reshape(testData, (testData.shape[0], -1))
 
 # Hyperparameters
 
-epochs = 200
+epochs = 50
 hidden_size = 1000
 lr = 0.01
 gamma = 0.9
