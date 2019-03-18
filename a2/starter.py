@@ -49,7 +49,10 @@ def GradReLU(x):
     return np.where(x <= 0, 0, 1)
 
 def softmax(x):
-    return np.exp(x)/ np.exp(x).sum()
+    num = np.exp(x)
+    denom = np.sum(np.exp(x), axis=1, keepdims=True)
+    return np.divide(num, denom)
+
 
 def computeLayer(X, W, b):
     return np.dot(X, W) + np.repeat(np.transpose(b), X.shape[0], axis=0)
@@ -60,21 +63,11 @@ def CE(target, prediction):
 def gradCE(target, prediction):
     return -np.sum(target/prediction)/ prediction.shape[0]
 
-def layer_sizes(dataset, labels):
-    # dataset: shape (input size, number of examples)
-    # labels: shape (output size, number of examples)
-
-    size_i = dataset.shape[0]  # feature (input layer) size
-    size_h = 1000 # hidden layer size
-    size_o = labels.shape[0]  # output layer size
-    return (size_i, size_h, size_o)
-
-
 def initialize_params(size_i, size_h, size_o):
 
-    W_h = np.random.normal(0, 2/(size_h+size_i), (size_i, size_h))
+    W_h = np.random.normal(0, 2/(size_i+size_h), (size_i, size_h))
     b_h = np.zeros(shape=(size_h, 1))
-    W_o = np.random.normal(0, 2/(size_o+size_h), (size_h, size_o))
+    W_o = np.random.normal(0, 2/(size_h+size_o), (size_h, size_o))
     b_o = np.zeros(shape=(size_o, 1))
 
     wb_dict = {"W_h": W_h, "b_h": b_h, "W_o": W_o, "b_o": b_o}
