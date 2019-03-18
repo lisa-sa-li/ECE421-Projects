@@ -294,8 +294,6 @@ def SGD(W, b, trainingData, trainingLabels, alpha, iterations, reg, EPS, minibat
 
 
                 ######### TENSORFLOW OPTIMIZATION IMPLEMENTATION
-<<<<<<< HEAD
-                    #print(sess.run(weights))
                 train_loss = sess.run(loss_tensor, feed_dict={data: batch_data, labels: batch_labels})
                 val_loss = sess.run(loss_tensor, feed_dict={data: validData, labels: validTarget})
                 test_loss = sess.run(loss_tensor, feed_dict={data: testData, labels: testTarget})
