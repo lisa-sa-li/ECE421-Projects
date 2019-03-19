@@ -95,13 +95,21 @@ def log_posterior(log_PDF, log_pi):
     # Outputs
     # log_post: N X K
 
-    # part 2.2 log P(Z = k| x) = log gauss PDF + log_pi
+    # part 2.2
+    # log P(Z = k| x) = log P(x|mu, sigma) + log_pi - logsumexp(z)
 
 
 
-    log_post = log_PDF + log_pi
+    log_post = log_PDF + tf.squeeze(log_pi) - tf.expand_dims(hlp.reduce_logsumexp(log_PDF), 1)
 
     return log_post
+
+
+def NLL_loss(log_post, log_gauss_PDF):
+
+    pass
+
+
 
 
 
@@ -115,3 +123,5 @@ print(mu_3.shape)
 st_devs = tf.random_normal([K, 1], dtype=tf.float64)
 
 log_norm_PDF = log_GaussPDF(data, mu_3, st_devs)
+log_pos = log_posterior(log_norm_PDF, st_devs)
+

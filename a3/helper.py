@@ -1,4 +1,6 @@
 import tensorflow as tf
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def reduce_logsumexp(input_tensor, reduction_indices=1, keep_dims=False):
