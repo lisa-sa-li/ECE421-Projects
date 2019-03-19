@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import helper as hlp
 import os
 import math
+import random
+from tensorflow.python import debug as tf_debug
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 #from starter_kmeans import *
@@ -73,11 +75,11 @@ def log_GaussPDF(X, mu, sigma):
     D = na - 2 * tf.matmul(X, mu, False, True) + nb     # N x K
 
 
-    sigma2_mat = tf.linalg.diag(tf.square(tf.transpose(sigma)))      # this is a K x K covariance matrix
+    sigma2_mat = tf.linalg.diag(tf.square(tf.transpose(tf.square(sigma))))      # this is a K x K covariance matrix
     sigma2_mat = tf.squeeze(sigma2_mat)
 
 
-    coeff = -(X.shape[1]/2)*tf.cast(tf.log(2*math.pi), tf.float64) - (1/2)*tf.log(tf.linalg.det(sigma2_mat))
+    coeff = -(tf.shape(X)[1]/2)*tf.cast(tf.log(2*math.pi), tf.float64) - (1/2)*tf.log(tf.linalg.det(sigma2_mat))
 
 
     mat = -(1/2) * tf.matmul(D, tf.linalg.inv(sigma2_mat))
@@ -105,23 +107,62 @@ def log_posterior(log_PDF, log_pi):
     return log_post
 
 
-def NLL_loss(log_post, log_gauss_PDF):
+def NLL_loss(log_gauss_PDF, psi):
 
-    pass
+    # -log P(X) = - sum log (sum pi_k N(x| mu, sigma))
+
+    # phi = tf.random_uniform([1], minval=-1000, maxval=1000, dtype=tf.float64)
+
+    # sigma2 = tf.exp(phi)
+
+    log_pi_array = tf.squeeze(hlp.logsoftmax(psi))    # K x 1
+
+    inner_term = log_gauss_PDF + log_pi_array
+
+    sum_over_clusters = hlp.reduce_logsumexp(inner_term)
+
+    sum_over_points = -tf.reduce_sum(tf.log(sum_over_clusters))
+
+    return sum_over_points
 
 
 
 
 
 num_updates = 600
-lr = 0.01
+lr = 0.0000001
 K = 3
-mu_3 = np.load('mu_3.npy')
-print(mu_3.shape)
 
-#mean = k_means(num_updates, lr, K, data)
-st_devs = tf.random_normal([K, 1], dtype=tf.float64)
 
-log_norm_PDF = log_GaussPDF(data, mu_3, st_devs)
-log_pos = log_posterior(log_norm_PDF, st_devs)
+
+
+x = tf.placeholder(name='x', dtype=tf.float64, shape=(None, data.shape[1]))
+mu = tf.get_variable(name='mean_vector', dtype=tf.float64, shape=(K, data.shape[1]), initializer=tf.initializers.random_normal(seed=0))
+sigma = tf.get_variable(name='stdev_vector', dtype=tf.float64, shape=(K, 1), initializer=tf.initializers.random_normal(seed=0))
+
+logGaussPDF = log_GaussPDF(x, mu, sigma)
+
+psi = tf.get_variable(name='psi_vector', dtype=tf.float64, shape=(K, 1), initializer=tf.initializers.random_normal(seed=0))
+
+#log_post = log_posterior(logGaussPDF, log_pi_array)
+
+NLLloss = NLL_loss(logGaussPDF, psi)
+
+optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(NLLloss)
+
+
+with tf.Session() as sess:
+    sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+    sess.run(tf.global_variables_initializer())
+
+
+    for i in range(num_updates):
+        sess.run(optimizer, feed_dict={x: data})
+
+        train_loss = sess.run(NLLloss, feed_dict={x: data})
+
+        print('The training loss is: {}'.format(train_loss))
+
+
+
 
