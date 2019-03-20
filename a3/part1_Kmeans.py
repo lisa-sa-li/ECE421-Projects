@@ -142,6 +142,9 @@ def k_means(num_updates, lr, K, data):
         x, y, cluster_label = data_cluster_mat.T
         plt.scatter(x, y, c=cluster_label, label='data')
         plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='r')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title('Result of running K-means algorithm with K = {}'.format(K))
         plt.legend()
         plt.show()
 

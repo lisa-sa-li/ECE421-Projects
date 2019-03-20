@@ -184,7 +184,7 @@ with tf.Session() as sess:
 
     final_posterior = sess.run(log_post, feed_dict={x: data})
 
-    print(final_posterior)
+
 
     print('the final mu is: ', final_mu)
 
@@ -224,6 +224,9 @@ with tf.Session() as sess:
     x, y, cluster_label = data_cluster_mat.T
     plt.scatter(x, y, c=cluster_label, label='data')
     plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='r')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('Result of running Gaussian Mixture Algorithm with K = {}'.format(K))
     plt.legend()
     plt.show()
     
