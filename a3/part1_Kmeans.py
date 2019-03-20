@@ -1,3 +1,15 @@
+'''
+ECE421 A3 part 1
+
+Code written by Andy Zhou
+
+Mar 19, 2019
+
+'''
+
+
+
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
