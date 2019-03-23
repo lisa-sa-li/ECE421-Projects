@@ -84,7 +84,7 @@ def k_means(num_updates, lr, K, data):
 
     #mu = tf.random_normal(shape=(K, data.shape[1]))
 
-    loss = tf.reduce_sum(distanceFunc(x, mu))
+    loss = tf.reduce_sum(tf.reduce_min(distanceFunc(x, mu), axis=1))
 
     optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(loss)
 
@@ -154,4 +154,4 @@ def k_means(num_updates, lr, K, data):
 
 
 mu_3 = k_means(num_updates, lr, K, data)
-np.save('mu_3', mu_3)
+#np.save('mu_3', mu_3)
