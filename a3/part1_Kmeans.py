@@ -62,7 +62,7 @@ def distanceFunc(X, MU):
 
 num_updates = 600
 lr = 0.01
-K = 3
+K = 5
 
 
 def k_means(num_updates, lr, K, data):
@@ -89,9 +89,14 @@ def k_means(num_updates, lr, K, data):
 
             train_loss = sess.run(loss, feed_dict={x:data})
 
-            val_loss = sess.run(loss, feed_dict={x:val_data})
+            if is_valid:
+                val_loss = sess.run(loss, feed_dict={x:val_data})
 
-            print('The training loss is: {} | The validation loss is: {} '.format(train_loss, round(val_loss, 2)))
+                print('The training loss is: {} | The validation loss is: {} '.format(train_loss, round(val_loss, 2)))
+
+            else:
+                print('The training loss is: {}'.format(train_loss))
+
 
             train_loss_list.append(train_loss)
 
@@ -134,10 +139,17 @@ def k_means(num_updates, lr, K, data):
 
         for g in np.unique(cluster_label):
             i = np.where(cluster_label == g)
-            plt.scatter(x[i], y[i], label='Cluster ' + str(int(g)))
+            plt.scatter(x[i], y[i], label='Cluster ' + str(int(g)), s=8)
 
         #plt.scatter(x, y, c=cluster_label, label='data')
-        plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='k')
+        plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='navy')
+
+        n = [str(i) for i in range(1, K + 1)]
+
+        for i, txt in enumerate(n):
+            plt.annotate(txt, (x_mu[i], y_mu[i]))
+
+
         plt.xlabel('x')
         plt.ylabel('y')
         plt.title('Result of running K-means algorithm with K = {}'.format(K))
@@ -149,5 +161,5 @@ def k_means(num_updates, lr, K, data):
 
 
 
-mu_3 = k_means(num_updates, lr, K, data)
+mu = k_means(num_updates, lr, K, data)
 #np.save('mu_3', mu_3)
