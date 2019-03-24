@@ -57,17 +57,6 @@ def distanceFunc(X, MU):
     D = na - 2 * tf.matmul(X, MU, False, True) + nb
 
 
-    '''
-    
-    pair_dist_mat = tf.zeros((X.shape[0], MU.shape[0]))
-
-    for i, obs in enumerate(X):
-        for k in range(MU.shape[0]):
-            pair_dist_mat[i][k] = tf.linalg.norm(obs-MU[k])
-
-    return pair_dist_mat
-    '''
-
     return D
 
 
@@ -86,7 +75,7 @@ def k_means(num_updates, lr, K, data):
 
     loss = tf.reduce_sum(tf.reduce_min(distanceFunc(x, mu), axis=1))
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(learning_rate=lr, beta1=0.9, beta2=0.99, epsilon=1e-5).minimize(loss)
 
 
     with tf.Session() as sess:
@@ -102,7 +91,7 @@ def k_means(num_updates, lr, K, data):
 
             val_loss = sess.run(loss, feed_dict={x:val_data})
 
-            print('The training loss is: {} | The validation loss is: {} '.format(train_loss, val_loss))
+            print('The training loss is: {} | The validation loss is: {} '.format(train_loss, round(val_loss, 2)))
 
             train_loss_list.append(train_loss)
 
@@ -133,15 +122,22 @@ def k_means(num_updates, lr, K, data):
         for cluster in range(1,K+1):
 
             percentage = dict_counts[cluster] * 100/data.shape[0]
-            print('The percentage of points belonging to cluster {} is: {}% '.format(cluster, percentage))
+            print('The percentage of points belonging to cluster {} is: {}% '.format(cluster, round(percentage, 2)))
 
 
 
 
         x_mu, y_mu = final_mu.T
         x, y, cluster_label = data_cluster_mat.T
-        plt.scatter(x, y, c=cluster_label, label='data')
-        plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='r')
+
+
+
+        for g in np.unique(cluster_label):
+            i = np.where(cluster_label == g)
+            plt.scatter(x[i], y[i], label='Cluster ' + str(int(g)))
+
+        #plt.scatter(x, y, c=cluster_label, label='data')
+        plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='k')
         plt.xlabel('x')
         plt.ylabel('y')
         plt.title('Result of running K-means algorithm with K = {}'.format(K))
