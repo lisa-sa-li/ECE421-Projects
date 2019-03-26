@@ -1,7 +1,7 @@
 '''
 ECE421 A3 part 1
 
-Code written by Andy Zhou
+Code written by Andy Zhou, Ryan Do
 
 Mar 19, 2019
 
@@ -23,8 +23,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 data = np.load('data2D.npy')
 #data = np.load('data100D.npy')
 [num_pts, dim] = np.shape(data)
-
-is_valid = True
+total_data = data
+is_valid = False
 # For Validation set
 if is_valid:
   valid_batch = int(num_pts / 3.0)
@@ -62,7 +62,7 @@ def distanceFunc(X, MU):
 
 num_updates = 600
 lr = 0.01
-K = 5
+K = 3
 
 
 def k_means(num_updates, lr, K, data):
@@ -95,7 +95,7 @@ def k_means(num_updates, lr, K, data):
                 print('The training loss is: {} | The validation loss is: {} '.format(train_loss, round(val_loss, 2)))
 
             else:
-                print('The training loss is: {}'.format(train_loss))
+                print('The training loss is: {}'.format(round(train_loss, 2)))
 
 
             train_loss_list.append(train_loss)
@@ -105,20 +105,20 @@ def k_means(num_updates, lr, K, data):
         loss_curve = plt.plot(train_loss_list)
         loss_curve = plt.xlabel('Number of updates')
         loss_curve = plt.ylabel('Loss')
-        loss_curve = plt.title("K={}, Loss VS Number of updates".format(K))
+        loss_curve = plt.title("K={}, Loss VS Number of updates (K-Means)".format(K))
 
 
         plt.show(loss_curve)
 
-        print(final_mu)
+        #print(final_mu)
 
-        data_cluster_mat = np.column_stack((data, np.ones((data.shape[0], 1))))
+        data_cluster_mat = np.column_stack((total_data, np.ones((total_data.shape[0], 1))))
 
         for point in data_cluster_mat:
 
 
-            distances = np.array([np.linalg.norm(point[:2]-center) for center in final_mu])
-            point[2] = np.argmin(distances)+1
+            distances = np.array([np.linalg.norm(point[:-1]-center) for center in final_mu])
+            point[-1] = np.argmin(distances)+1
 
 
         unique, counts = np.unique(data_cluster_mat[:, -1], return_counts=True)
@@ -126,35 +126,38 @@ def k_means(num_updates, lr, K, data):
 
         for cluster in range(1,K+1):
 
-            percentage = dict_counts[cluster] * 100/data.shape[0]
-            print('The percentage of points belonging to cluster {} is: {}% '.format(cluster, round(percentage, 2)))
+            try:
+                percentage = dict_counts[cluster] * 100/total_data.shape[0]
+                print('The percentage of points belonging to cluster {} is: {}% '.format(cluster, round(percentage, 2)))
+
+            except KeyError:
+                print('Cluster {} has no points belonging to it'.format(cluster))
+
+        try:
+            x_mu, y_mu = final_mu.T
+            x, y, cluster_label = data_cluster_mat.T
+
+            for g in np.unique(cluster_label):
+                i = np.where(cluster_label == g)
+                plt.scatter(x[i], y[i], label='Cluster ' + str(int(g)), s=8)
+
+            #plt.scatter(x, y, c=cluster_label, label='data')
+            plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='navy')
+
+            n = [str(i) for i in range(1, K + 1)]
+
+            for i, txt in enumerate(n):
+                plt.annotate(txt, (x_mu[i], y_mu[i]))
 
 
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.title('Result of running K-means algorithm with K = {}'.format(K))
+            plt.legend()
+            plt.show()
 
-
-        x_mu, y_mu = final_mu.T
-        x, y, cluster_label = data_cluster_mat.T
-
-
-
-        for g in np.unique(cluster_label):
-            i = np.where(cluster_label == g)
-            plt.scatter(x[i], y[i], label='Cluster ' + str(int(g)), s=8)
-
-        #plt.scatter(x, y, c=cluster_label, label='data')
-        plt.scatter(x_mu, y_mu, cmap='r', marker='X', label='centroids', c='navy')
-
-        n = [str(i) for i in range(1, K + 1)]
-
-        for i, txt in enumerate(n):
-            plt.annotate(txt, (x_mu[i], y_mu[i]))
-
-
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title('Result of running K-means algorithm with K = {}'.format(K))
-        plt.legend()
-        plt.show()
+        except:
+            print("Currently testing 100 Dimensional DataSet")
 
         return final_mu
 
